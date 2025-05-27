@@ -10,7 +10,9 @@ import {
   Music,
   UserPlus,
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../shared/contexts/AuthContext';
 
@@ -21,56 +23,75 @@ const Register = () => {
     confirmPassword: '',
     fullName: '',
     dob: '',
-    instrument: ''
+    instrument: '',
+    tipo_usuario: '' // Novo campo
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1); // Multi-step form
+  const [step, setStep] = useState(1);
   
   const { signup } = useAuth();
   const navigate = useNavigate();
 
+  // Tipos de usuário com ícones e descrições
+  const userTypes = [
+    {
+      value: 'aluno',
+      label: 'Aluno',
+      icon: GraduationCap,
+      emoji: '🎓',
+      description: 'Aprender música, fazer aulas e acompanhar progresso',
+      color: 'blue'
+    },
+    {
+      value: 'professor',
+      label: 'Professor',
+      icon: BookOpen,
+      emoji: '👨‍🏫',
+      description: 'Ensinar, criar conteúdos e acompanhar alunos',
+      color: 'green'
+    }
+  ];
+
   const instruments = [
-  { value: 'teclado', label: '🎹 Teclado', emoji: '🎹' },
-  { value: 'piano', label: '🎹 Piano', emoji: '🎹' },
-  { value: 'bateria', label: '🥁 Bateria', emoji: '🥁' },
-  { value: 'violao', label: '🎸 Violão', emoji: '🎸' },
-  { value: 'guitarra', label: '🎸 Guitarra', emoji: '🎸' },
-  { value: 'baixo', label: '🎸 Baixo', emoji: '🎸' },
-  { value: 'voz', label: '🎤 Canto / Voz', emoji: '🎤' },
-
-  // Sopros separados
-  { value: 'saxofone', label: '🎷 Saxofone', emoji: '🎷' },
-  { value: 'clarinete', label: '🎶 Clarinete', emoji: '🎶' },
-  { value: 'oboe', label: '🎶 Oboé', emoji: '🎶' },
-  { value: 'fagote', label: '🎶 Fagote', emoji: '🎶' },
-  { value: 'flauta', label: '🎶 Flauta', emoji: '🎶' },
-
-  // Metais separados
-  { value: 'trompete', label: '🎺 Trompete', emoji: '🎺' },
-  { value: 'trombone', label: '🎺 Trombone', emoji: '🎺' },
-  { value: 'tuba', label: '🎺 Tuba', emoji: '🎺' },
-  { value: 'euphonium', label: '🎺 Eufônio', emoji: '🎺' },
-
-  // Cordas clássicas
-  { value: 'violino', label: '🎻 Violino', emoji: '🎻' },
-  { value: 'viola', label: '🎻 Viola Clássica', emoji: '🎻' },
-  { value: 'violoncelo', label: '🎻 Violoncelo', emoji: '🎻' },
-  { value: 'contrabaixo_acustico', label: '🎻 Contrabaixo Acústico', emoji: '🎻' },
-
-  // Outros
-  { value: 'percussao', label: '🥁 Percussão Erudita', emoji: '🥁' },
-  { value: 'teoria', label: '📘 Teoria Musical', emoji: '📘' },
-  { value: 'outro', label: '🎵 Outro', emoji: '🎵' }
-];
-
+    { value: 'teclado', label: '🎹 Teclado', emoji: '🎹' },
+    { value: 'piano', label: '🎹 Piano', emoji: '🎹' },
+    { value: 'bateria', label: '🥁 Bateria', emoji: '🥁' },
+    { value: 'violao', label: '🎸 Violão', emoji: '🎸' },
+    { value: 'guitarra', label: '🎸 Guitarra', emoji: '🎸' },
+    { value: 'baixo', label: '🎸 Baixo', emoji: '🎸' },
+    { value: 'voz', label: '🎤 Canto / Voz', emoji: '🎤' },
+    { value: 'saxofone', label: '🎷 Saxofone', emoji: '🎷' },
+    { value: 'clarinete', label: '🎶 Clarinete', emoji: '🎶' },
+    { value: 'oboe', label: '🎶 Oboé', emoji: '🎶' },
+    { value: 'fagote', label: '🎶 Fagote', emoji: '🎶' },
+    { value: 'flauta', label: '🎶 Flauta', emoji: '🎶' },
+    { value: 'trompete', label: '🎺 Trompete', emoji: '🎺' },
+    { value: 'trombone', label: '🎺 Trombone', emoji: '🎺' },
+    { value: 'tuba', label: '🎺 Tuba', emoji: '🎺' },
+    { value: 'euphonium', label: '🎺 Eufônio', emoji: '🎺' },
+    { value: 'violino', label: '🎻 Violino', emoji: '🎻' },
+    { value: 'viola', label: '🎻 Viola Clássica', emoji: '🎻' },
+    { value: 'violoncelo', label: '🎻 Violoncelo', emoji: '🎻' },
+    { value: 'contrabaixo_acustico', label: '🎻 Contrabaixo Acústico', emoji: '🎻' },
+    { value: 'percussao', label: '🥁 Percussão Erudita', emoji: '🥁' },
+    { value: 'teoria', label: '📘 Teoria Musical', emoji: '📘' },
+    { value: 'outro', label: '🎵 Outro', emoji: '🎵' }
+  ];
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    });
+  };
+
+  const handleUserTypeSelect = (type) => {
+    setFormData({
+      ...formData,
+      tipo_usuario: type
     });
   };
 
@@ -88,6 +109,7 @@ const Register = () => {
     if (formData.fullName.length < 3) return 'Nome deve ter pelo menos 3 caracteres';
     if (!formData.dob) return 'Data de nascimento é obrigatória';
     if (!formData.instrument) return 'Selecione seu instrumento principal';
+    if (!formData.tipo_usuario) return 'Selecione seu tipo de usuário';
     return null;
   };
 
@@ -117,15 +139,20 @@ const Register = () => {
       await signup(formData.email, formData.password, {
         fullName: formData.fullName,
         dob: formData.dob,
-        instrument: formData.instrument
+        instrument: formData.instrument,
+        tipo_usuario: formData.tipo_usuario // Incluir tipo de usuário
       });
 
-      // Mensagem bilíngue
+      // Mensagem personalizada baseada no tipo de usuário
+      const userType = userTypes.find(type => type.value === formData.tipo_usuario);
+      const welcomeMessage = formData.tipo_usuario === 'aluno' 
+        ? 'Bem-vindo à sua jornada musical!' 
+        : `Bem-vindo à equipe como ${userType?.label}!`;
+
       alert(
-        '✅ Cadastro realizado com sucesso!\n\nPor favor, verifique seu e-mail para confirmar sua conta antes de fazer login.\n\n---\n\n登録が完了しました！\nログインする前に、メールを確認してアカウントを認証してください。'
+        `✅ Cadastro realizado com sucesso!\n\n${welcomeMessage}\n\nPor favor, verifique seu e-mail para confirmar sua conta antes de fazer login.\n\n---\n\n登録が完了しました！\nログインする前に、メールを確認してアカウントを認証してください。`
       );
 
-      // Redirecionar para votação do logo
       navigate('/vote');
     } catch (error) {
       console.error('Erro no cadastro:', error);
@@ -139,6 +166,24 @@ const Register = () => {
     }
   };
 
+  const getColorClasses = (color, selected = false) => {
+    const colors = {
+      blue: selected 
+        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50',
+      green: selected 
+        ? 'border-green-500 bg-green-50 text-green-700' 
+        : 'border-gray-200 hover:border-green-300 hover:bg-green-50',
+      purple: selected 
+        ? 'border-purple-500 bg-purple-50 text-purple-700' 
+        : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50',
+      red: selected 
+        ? 'border-red-500 bg-red-50 text-red-700' 
+        : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+    };
+    return colors[color] || colors.blue;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -150,7 +195,7 @@ const Register = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Junte-se à Nipo School</h1>
           <p className="text-gray-600">Crie sua conta e comece sua jornada musical</p>
-          <p className="text-sm text-red-500 font-medium mt-1">🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”</p>
+          <p className="text-sm text-red-500 font-medium mt-1">🎵 "Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha."</p>
         </div>
 
         {/* Progress Steps */}
@@ -257,6 +302,13 @@ const Register = () => {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
+
               {/* Next Button */}
               <button
                 type="submit"
@@ -274,6 +326,35 @@ const Register = () => {
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-2">Seu Perfil Musical</h2>
                 <p className="text-sm text-gray-600">Conte-nos mais sobre você</p>
+              </div>
+
+              {/* User Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Como você quer participar da Nipo School?
+                </label>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {userTypes.map((type) => {
+                    const IconComponent = type.icon;
+                    const isSelected = formData.tipo_usuario === type.value;
+                    
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => handleUserTypeSelect(type.value)}
+                        className={`p-5 rounded-xl border-2 transition-all duration-200 text-left ${getColorClasses(type.color, isSelected)}`}
+                      >
+                        <div className="flex items-center mb-3">
+                          <span className="text-2xl mr-3">{type.emoji}</span>
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-bold text-base mb-2">{type.label}</h3>
+                        <p className="text-sm opacity-75 leading-relaxed">{type.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Full Name */}
@@ -388,7 +469,7 @@ const Register = () => {
           {/* Login Link */}
           <div className="text-center">
             <p className="text-gray-600 text-sm">
-              Já tem uma conta?{' '}
+              Já tem uma conta?{' '}  
               <button
                 onClick={() => navigate('/login')}
                 className="text-red-600 hover:text-red-700 font-medium transition-colors"

@@ -1,0 +1,92 @@
+📂 Estrutura Base do Projeto: "Nipo School – Área dos Professores"
+🧭 Visão Geral
+A área dos professores é um hub interno voltado à formação, alinhamento e capacitação contínua dos educadores, com conteúdos como vídeos, sacadas pedagógicas, devocionais, materiais práticos e dicas.
+
+✅ Finalidade do Módulo
+Valorizar e capacitar professores e pastores
+
+Unificar a visão pedagógica e espiritual da escola
+
+Servir de acervo para boas práticas e materiais didáticos
+
+Permitir uploads e registros de conteúdos relevantes
+
+🧱 Estrutura Técnica Proposta (Next.js + Supabase)
+📁 Frontend – Caminhos e arquivos
+bash
+Copy
+Edit
+src/
+├── app/
+│   ├── professores/                  ← Módulo principal
+│   │   ├── layout.js                 ← Layout específico da área
+│   │   ├── page.js                   ← Painel geral / dashboard
+│   │   ├── conteudos/page.js         ← Lista de conteúdos
+│   │   ├── novo/page.js              ← Formulário de inclusão de conteúdo
+│   │   ├── minha-area/page.js        ← Conteúdos criados pelo usuário
+│   │   └── [id]/page.js              ← Visualização de conteúdo individual
+├── components/professores/          ← Componentes reutilizáveis do módulo
+│   ├── FormConteudo.js
+│   ├── ListaConteudos.js
+│   └── ConteudoCard.js
+🗄️ Backend – Tabelas no Supabase
+sql
+Copy
+Edit
+CREATE TABLE professores_conteudos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  titulo TEXT NOT NULL,
+  tipo TEXT CHECK (tipo IN ('sacada', 'video', 'devocional', 'material')) NOT NULL,
+  descricao TEXT,
+  url_video TEXT,
+  url_arquivo TEXT,
+  criado_por UUID REFERENCES auth.users(id),
+  visivel BOOLEAN DEFAULT true,
+  criado_em TIMESTAMP DEFAULT now()
+);
+🔐 Permissões sugeridas
+Nível de acesso	Acesso à área /professores	Pode criar conteúdos	Pode editar/deletar
+professor	✅	✅	✅ (somente os seus)
+pastor	✅	✅	✅ (geral)
+admin	✅	✅	✅ (geral)
+aluno	❌	❌	❌
+
+📝 Campos padrão para cada conteúdo
+Campo	Tipo/Exemplo
+Título	"5 sacadas para melhorar sua aula"
+Tipo	'video', 'sacada', 'devocional'
+Descrição	"Dicas rápidas para aulas práticas"
+URL Vídeo	"https://youtu.be/abc123"
+PDF/Material	"https://supabase.io/storage/...pdf"
+Visível	true / false
+Criado por	Referência ao usuário autor
+Criado em	Timestamp
+
+🔄 Fluxo de uso do módulo
+Professor acessa /professores
+
+Vê conteúdos recomendados e últimos publicados
+
+Pode criar novo conteúdo (formulário simples)
+
+Acessa “Minha Área” para ver o que ele mesmo já publicou
+
+Admin ou pastor pode moderar/editar conteúdos se necessário
+
+📌 Status Atual (base de continuidade para qualquer chat)
+Item	Status
+Estrutura de pastas e rotas	✅ Definida
+Tabela professores_conteudos	✅ Estruturada
+Campos e tipos de conteúdo	✅ Definidos
+Permissões por nível de acesso	✅ Planejado
+Componentes e páginas principais	⏳ Em construção
+Upload de arquivos e vídeos	⏳ A implementar
+Integração com Supabase	⏳ Próximo passo
+
+🧠 Observações importantes
+Toda a lógica será baseada no campo nivel_acesso da tabela users
+
+A estrutura respeita os padrões do restante da Nipo School
+
+Pode futuramente ser expandido para lives, comentários, eventos internos e formações
+
