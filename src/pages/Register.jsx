@@ -33,13 +33,39 @@ const Register = () => {
   const navigate = useNavigate();
 
   const instruments = [
-    { value: 'teclado', label: '🎹 Teclado', emoji: '🎹' },
-    { value: 'bateria', label: '🥁 Bateria', emoji: '🥁' },
-    { value: 'violao', label: '🎸 Violão', emoji: '🎸' },
-    { value: 'baixo', label: '🎸 Baixo', emoji: '🎸' },
-    { value: 'voz', label: '🎤 Vocal', emoji: '🎤' },
-    { value: 'outro', label: '🎵 Outro', emoji: '🎵' }
-  ];
+  { value: 'teclado', label: '🎹 Teclado', emoji: '🎹' },
+  { value: 'piano', label: '🎹 Piano', emoji: '🎹' },
+  { value: 'bateria', label: '🥁 Bateria', emoji: '🥁' },
+  { value: 'violao', label: '🎸 Violão', emoji: '🎸' },
+  { value: 'guitarra', label: '🎸 Guitarra', emoji: '🎸' },
+  { value: 'baixo', label: '🎸 Baixo', emoji: '🎸' },
+  { value: 'voz', label: '🎤 Canto / Voz', emoji: '🎤' },
+
+  // Sopros separados
+  { value: 'saxofone', label: '🎷 Saxofone', emoji: '🎷' },
+  { value: 'clarinete', label: '🎶 Clarinete', emoji: '🎶' },
+  { value: 'oboe', label: '🎶 Oboé', emoji: '🎶' },
+  { value: 'fagote', label: '🎶 Fagote', emoji: '🎶' },
+  { value: 'flauta', label: '🎶 Flauta', emoji: '🎶' },
+
+  // Metais separados
+  { value: 'trompete', label: '🎺 Trompete', emoji: '🎺' },
+  { value: 'trombone', label: '🎺 Trombone', emoji: '🎺' },
+  { value: 'tuba', label: '🎺 Tuba', emoji: '🎺' },
+  { value: 'euphonium', label: '🎺 Eufônio', emoji: '🎺' },
+
+  // Cordas clássicas
+  { value: 'violino', label: '🎻 Violino', emoji: '🎻' },
+  { value: 'viola', label: '🎻 Viola Clássica', emoji: '🎻' },
+  { value: 'violoncelo', label: '🎻 Violoncelo', emoji: '🎻' },
+  { value: 'contrabaixo_acustico', label: '🎻 Contrabaixo Acústico', emoji: '🎻' },
+
+  // Outros
+  { value: 'percussao', label: '🥁 Percussão Erudita', emoji: '🥁' },
+  { value: 'teoria', label: '📘 Teoria Musical', emoji: '📘' },
+  { value: 'outro', label: '🎵 Outro', emoji: '🎵' }
+];
+
 
   const handleInputChange = (e) => {
     setFormData({
