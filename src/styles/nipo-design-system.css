@@ -1,0 +1,127 @@
+/* Nipo School Design System - Baseado no logo oficial */
+:root {
+  /* Cores Oficiais Nipo School */
+  --nipo-red: #E53E3E;
+  --nipo-red-light: #FF5555;
+  --nipo-red-dark: #CC0000;
+  --nipo-cream: #F7F3F0;
+  --nipo-warm: #FFF8F5;
+  --nipo-gray: #2D3748;
+  --nipo-gray-light: #718096;
+  --nipo-shadow: rgba(229, 62, 62, 0.15);
+}
+
+/* Classes Nipo (.nipo-*) */
+.nipo-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(229, 62, 62, 0.1);
+}
+
+.nipo-gradient {
+  background: linear-gradient(135deg, var(--nipo-red) 0%, var(--nipo-red-light) 100%);
+}
+
+.nipo-text-primary { color: var(--nipo-gray); }
+.nipo-text-secondary { color: var(--nipo-gray-light); }
+.nipo-text-red { color: var(--nipo-red); }
+
+/* Anima√ß√µes Japonesas (Ma - Espa√ßos) */
+.nipo-float {
+  animation: nipoFloat 6s ease-in-out infinite;
+}
+
+@keyframes nipoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.nipo-pulse {
+  animation: nipoPulse 3s ease-in-out infinite;
+}
+
+@keyframes nipoPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+/* Zen Circle Progress */
+.zen-circle {
+  width: 120px;
+  height: 120px;
+  border: 3px solid var(--nipo-red);
+  border-radius: 50%;
+  position: relative;
+}
+
+.zen-circle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  border: 2px solid var(--nipo-red-light);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+}
+
+/* Kaizen Progress Bar */
+.kaizen-bar {
+  background: linear-gradient(90deg, var(--nipo-red) 0%, var(--nipo-red-light) 100%);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kaizen-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+}
+
+/* Glass Effect */
+.nipo-glass {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Shibui (Beleza Sutil) */
+.shibui-subtle {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.shibui-subtle:hover {
+  opacity: 1;
+}
+
+/* Rafa Beat Avatar */
+.rafa-avatar {
+  background: linear-gradient(135deg, var(--nipo-red) 0%, var(--nipo-red-light) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  position: relative;
+}
+
+.rafa-avatar::after {
+  content: 'Ìæµ';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
