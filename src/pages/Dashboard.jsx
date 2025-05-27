@@ -170,7 +170,7 @@ const Dashboard = () => {
             <span className="inline-block animate-bounce ml-2">👋</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 mb-2">Bem-vindo à Nipo School</p>
-          <p className="text-sm text-red-500 font-medium">Um som por vez. Uma geração por vez.</p>
+          <p className="text-sm text-red-500 font-medium">🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”</p>
         </header>
 
         {/* Progress Circle */}
@@ -547,7 +547,7 @@ const Dashboard = () => {
             Nipo School App &copy; 2025
           </p>
           <p className="text-red-500 text-sm font-bold">
-            Um som por vez. Uma geração por vez.
+            🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”
           </p>
           <p className="text-xs text-gray-400 mt-2">
             Versão Beta • ADNIPO Suzano

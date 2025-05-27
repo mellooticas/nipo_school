@@ -514,7 +514,7 @@ const Vote = () => {
                 Nipo School App &copy; 2025
               </p>
               <p className="text-red-500 text-sm font-bold">
-                Um som por vez. Uma geração por vez.
+                🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 Votação encerra em 31/12/2025 • Resultado será anunciado em janeiro

@@ -150,7 +150,7 @@ const Register = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Junte-se à Nipo School</h1>
           <p className="text-gray-600">Crie sua conta e comece sua jornada musical</p>
-          <p className="text-sm text-red-500 font-medium mt-1">Um som por vez. Uma geração por vez.</p>
+          <p className="text-sm text-red-500 font-medium mt-1">🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”</p>
         </div>
 
         {/* Progress Steps */}
