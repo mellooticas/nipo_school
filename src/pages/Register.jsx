@@ -120,6 +120,11 @@ const Register = () => {
         instrument: formData.instrument
       });
 
+      // Mensagem bilíngue
+      alert(
+        '✅ Cadastro realizado com sucesso!\n\nPor favor, verifique seu e-mail para confirmar sua conta antes de fazer login.\n\n---\n\n登録が完了しました！\nログインする前に、メールを確認してアカウントを認証してください。'
+      );
+
       // Redirecionar para votação do logo
       navigate('/vote');
     } catch (error) {

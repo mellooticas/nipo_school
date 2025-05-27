@@ -1,9 +1,11 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase/supabaseClient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,10 +16,25 @@ export const AuthProvider = ({ children }) => {
     setMounted(true);
   }, []);
 
+  // Redirecionamento baseado no voto
+    const redirectByVote = (profile) => {
+    console.log('Redirecionando com perfil:', profile);
+    console.log('has_voted?', profile?.has_voted);
+
+    if (!profile) return;
+
+    if (profile.has_voted === true) {
+      navigate('/dashboard');
+    } else {
+      navigate('/vote');
+    }
+  };
+
+
   // Função para buscar perfil
   const fetchUserProfile = async (userId) => {
     if (!userId) return null;
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -29,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Erro ao buscar perfil:', error);
         return null;
       }
-      
+
       setUserProfile(data);
       return data;
     } catch (error) {
@@ -47,13 +64,13 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
       try {
-        // Verificar sessão atual
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (isMounted) {
           if (session?.user) {
             setUser(session.user);
-            await fetchUserProfile(session.user.id);
+            const profile = await fetchUserProfile(session.user.id);
+            redirectByVote(profile);
           } else {
             setUser(null);
             setUserProfile(null);
@@ -61,39 +78,40 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
 
-        // Listener para mudanças de auth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!isMounted) return;
-            
+
             console.log('Auth state changed:', event, session?.user?.email);
-            
+
             if (session?.user) {
               setUser(session.user);
-              
-              // Se é um novo usuário (evento 'SIGNED_UP'), aguardar um pouco para o trigger criar o perfil
+
               if (event === 'SIGNED_UP') {
                 console.log('Novo usuário detectado, aguardando criação do perfil...');
-                // Aguardar 2 segundos para o trigger processar
                 setTimeout(async () => {
-                  await fetchUserProfile(session.user.id);
+                  const profile = await fetchUserProfile(session.user.id);
+                  redirectByVote(profile);
                 }, 2000);
               } else {
-                await fetchUserProfile(session.user.id);
+                const profile = await fetchUserProfile(session.user.id);
+                redirectByVote(profile);
               }
+
             } else {
               setUser(null);
               setUserProfile(null);
             }
-            
+
             setLoading(false);
           }
         );
 
+
         return () => {
           subscription.unsubscribe();
         };
-        
+
       } catch (error) {
         console.error('Erro na inicialização:', error);
         if (isMounted) {
@@ -103,7 +121,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     const cleanup = initAuth();
-
     return () => {
       isMounted = false;
       cleanup.then(fn => fn?.());
@@ -114,14 +131,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) throw error;
-      
+
       console.log('Login bem-sucedido:', data.user.email);
       return data;
     } catch (error) {
@@ -135,9 +152,9 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password, userData = {}) => {
     try {
       setLoading(true);
-      
+
       console.log('Iniciando signup com dados:', { email, userData });
-      
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -153,14 +170,14 @@ export const AuthProvider = ({ children }) => {
           },
         },
       });
-      
+
       if (error) throw error;
-      
+
       console.log('Signup bem-sucedido:', {
         user: data.user?.email,
         metadata: data.user?.user_metadata
       });
-      
+
       return data.user;
     } catch (error) {
       console.error('Erro no signup:', error);
@@ -173,10 +190,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       setUser(null);
       setUserProfile(null);
       console.log('Logout realizado com sucesso');
@@ -190,7 +207,7 @@ export const AuthProvider = ({ children }) => {
 
   const recordVote = async (logoId) => {
     if (!user) throw new Error('Usuário não autenticado');
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -200,13 +217,13 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error) throw error;
-      
-      setUserProfile(prev => ({ 
-        ...prev, 
-        voted_logo: logoId, 
-        has_voted: true 
+
+      setUserProfile(prev => ({
+        ...prev,
+        voted_logo: logoId,
+        has_voted: true
       }));
-      
+
       return data;
     } catch (error) {
       console.error('Erro ao votar:', error);
@@ -214,10 +231,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Função para atualizar perfil manualmente (fallback)
   const updateProfile = async (profileData) => {
     if (!user) throw new Error('Usuário não autenticado');
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -231,7 +247,7 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error) throw error;
-      
+
       setUserProfile(data);
       return data;
     } catch (error) {
@@ -240,7 +256,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Não renderizar no servidor para evitar hydration issues
   if (!mounted) {
     return null;
   }

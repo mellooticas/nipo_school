@@ -19,15 +19,18 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/dashboard');
+    await login(email, password);
+  // Redirecionamento será feito pelo AuthContext (onAuthStateChange)
     } catch (error) {
       console.error('Erro no login:', error);
       setError(
-        error.message.includes('Invalid login credentials') 
-          ? 'Email ou senha incorretos' 
-          : 'Erro ao fazer login. Tente novamente.'
+        error.message.includes('Email not confirmed')
+          ? 'Por favor, confirme seu e-mail antes de fazer login.'
+          : error.message.includes('Invalid login credentials')
+            ? 'Email ou senha incorretos'
+            : 'Erro ao fazer login. Tente novamente.'
       );
+
     } finally {
       setLoading(false);
     }
@@ -122,7 +125,7 @@ const Login = () => {
           </form>
 
           {/* Divider */}
-          <div className="my-6 flex items-center">
+          <div className="my-6 flex items-cen ter">
             <div className="flex-1 border-t border-gray-300"></div>
             <span className="px-4 text-sm text-gray-500">ou</span>
             <div className="flex-1 border-t border-gray-300"></div>

@@ -8,58 +8,68 @@ import {
   Vote as VoteIcon,
   Trophy,
   Sparkles,
-  Eye
+  Eye,
+  LogOut,
+  User,
+  SkipForward,
+  ChevronDown,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../shared/contexts/AuthContext';
+import { supabase } from '../shared/lib/supabase/supabaseClient';
 
 const Vote = () => {
-  const { userProfile, recordVote } = useAuth();
+  const { user, userProfile, recordVote, logout } = useAuth();
   const navigate = useNavigate();
+  const [logos, setLogos] = useState([]);
+  const [votes, setVotes] = useState({});
   const [selectedLogo, setSelectedLogo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [votes, setVotes] = useState({
-    logo1: 42,
-    logo2: 38,
-    logo3: 35
-  });
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Logos para votação (baseados nas imagens que você mostrou)
-  const logos = [
-    {
-      id: 'logo1',
-      name: 'Círculo Zen',
-      description: 'Design minimalista com espiral zen, representando o fluxo musical e a harmonia.',
-      image: '/api/placeholder/300/300',
-      concept: 'Simplicidade e Fluidez',
-      colors: ['#E53E3E', '#F5F5F5'],
-      style: '🌸 Zen Japonês'
-    },
-    {
-      id: 'logo2', 
-      name: 'Nota Musical',
-      description: 'Nota musical integrada ao círculo, simbolizando a música como centro da educação.',
-      image: '/api/placeholder/300/300',
-      concept: 'Música em Foco',
-      colors: ['#E53E3E', '#F97316'],
-      style: '🎵 Musical Direto'
-    },
-    {
-      id: 'logo3',
-      name: 'Origami Musical',
-      description: 'Pássaro origami com nota musical, unindo tradição japonesa e música moderna.',
-      image: '/api/placeholder/300/300',
-      concept: 'Tradição + Inovação',
-      colors: ['#E53E3E', '#DC2626'],
-      style: '🕊️ Origami Moderno'
-    }
-  ];
-
+  // Carrega logos e votos do Supabase
   useEffect(() => {
-    // Se usuário já votou, mostrar resultados
-    if (userProfile?.has_voted) {
-      setShowResults(true);
-      setSelectedLogo(userProfile.voted_logo);
+    const fetchData = async () => {
+      try {
+        // Buscar logos ativos
+        const { data: logosData, error: logosError } = await supabase
+          .from('logos')
+          .select('*')
+          .eq('ativo', true);
+
+        // Buscar votos da view
+        const { data: votosData, error: votosError } = await supabase
+          .from('view_placar_logos')
+          .select('*');
+
+        if (logosError) throw logosError;
+        if (votosError) throw votosError;
+
+        setLogos(logosData || []);
+
+        // Mapear votos por ID
+        const votosMap = {};
+        if (votosData) {
+          votosData.forEach(v => {
+            votosMap[v.id] = v.votos;
+          });
+        }
+        setVotes(votosMap);
+
+        // Se usuário já votou, mostrar resultados
+        if (userProfile?.voted_logo) {
+          setShowResults(true);
+          setSelectedLogo(userProfile.voted_logo);
+        }
+
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+      }
+    };
+
+    if (userProfile) {
+      fetchData();
     }
   }, [userProfile]);
 
@@ -72,6 +82,7 @@ const Vote = () => {
 
   // Determinar logo vencedor
   const getWinningLogo = () => {
+    if (Object.keys(votes).length === 0) return null;
     const maxVotes = Math.max(...Object.values(votes));
     const winningId = Object.keys(votes).find(id => votes[id] === maxVotes);
     return logos.find(logo => logo.id === winningId);
@@ -84,10 +95,10 @@ const Vote = () => {
     try {
       await recordVote(selectedLogo);
       
-      // Simular atualização dos votos (em produção viria do Supabase)
+      // Atualiza voto localmente
       setVotes(prev => ({
         ...prev,
-        [selectedLogo]: prev[selectedLogo] + 1
+        [selectedLogo]: (prev[selectedLogo] || 0) + 1
       }));
       
       setShowResults(true);
@@ -99,7 +110,34 @@ const Vote = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
+
+  const handleSkipVoting = () => {
+    if (window.confirm('Você tem certeza que quer pular a votação? Você poderá votar depois.')) {
+      navigate('/dashboard');
+    }
+  };
+
   const selectedLogoData = logos.find(logo => logo.id === selectedLogo);
+
+  // Loading state
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando perfil do usuário...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
@@ -107,6 +145,69 @@ const Vote = () => {
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-md shadow-sm border-b border-red-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          {/* User Info Bar */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                {userProfile?.avatar_url ? (
+                  <img 
+                    src={userProfile.avatar_url} 
+                    alt="Avatar" 
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-white" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-gray-800 text-sm">
+                  {userProfile?.full_name || user?.email?.split('@')[0]}
+                </p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Settings className="w-4 h-4 text-gray-600" />
+                <ChevronDown className="w-3 h-3 text-gray-600" />
+              </button>
+              
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => navigate('/dashboard')}
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      <span>Ir para Dashboard</span>
+                    </button>
+                    <button
+                      onClick={handleSkipVoting}
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-orange-600 hover:bg-orange-50"
+                    >
+                      <SkipForward className="w-4 h-4" />
+                      <span>Pular Votação</span>
+                    </button>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sair</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg">
               <span className="text-white text-2xl font-bold">鳥</span>
@@ -134,15 +235,32 @@ const Vote = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         
         {/* Voting Section */}
-        {!showResults ? (
+        {!showResults && logos.length > 0 ? (
           <>
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">
                 Qual logo representa melhor a Nipo School?
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 mb-4">
                 Clique no seu favorito e depois confirme seu voto
               </p>
+              
+              {/* Skip Option */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-orange-700 text-sm mb-2">
+                  <strong>Não quer votar agora?</strong>
+                </p>
+                <p className="text-orange-600 text-xs mb-3">
+                  Você pode pular e votar depois no dashboard
+                </p>
+                <button
+                  onClick={handleSkipVoting}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm flex items-center space-x-2 mx-auto"
+                >
+                  <SkipForward className="w-4 h-4" />
+                  <span>Pular por Agora</span>
+                </button>
+              </div>
             </div>
 
             {/* Logo Options */}
@@ -165,34 +283,28 @@ const Vote = () => {
                   )}
 
                   {/* Logo Preview */}
-                  <div className="w-full h-48 bg-gray-100 rounded-xl mb-4 flex items-center justify-center">
-                    <div className="w-32 h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                  <div className="w-full h-48 bg-gray-100 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={logo.url} 
+                      alt={logo.nome} 
+                      className="max-h-40 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div 
+                      className="w-32 h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center"
+                      style={{ display: 'none' }}
+                    >
                       <span className="text-white text-4xl font-bold">鳥</span>
                     </div>
                   </div>
 
                   {/* Logo Info */}
                   <div className="text-center">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">{logo.name}</h3>
-                    <p className="text-sm text-gray-600 mb-3">{logo.description}</p>
-                    
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-500">
-                        <strong>Conceito:</strong> {logo.concept}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <strong>Estilo:</strong> {logo.style}
-                      </div>
-                      <div className="flex items-center justify-center space-x-1">
-                        {logo.colors.map((color, index) => (
-                          <div 
-                            key={index}
-                            className="w-4 h-4 rounded-full border border-gray-300"
-                            style={{ backgroundColor: color }}
-                          ></div>
-                        ))}
-                      </div>
-                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{logo.nome}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{logo.descricao}</p>
                   </div>
                 </div>
               ))}
@@ -203,10 +315,10 @@ const Vote = () => {
               <div className="text-center">
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 max-w-md mx-auto">
                   <h3 className="text-lg font-bold text-gray-800 mb-2">
-                    Você escolheu: {selectedLogoData?.name}
+                    Você escolheu: {selectedLogoData?.nome}
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    {selectedLogoData?.description}
+                    {selectedLogoData?.descricao}
                   </p>
                   <button
                     onClick={handleVote}
@@ -229,7 +341,7 @@ const Vote = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : showResults && logos.length > 0 ? (
           /* Results Section */
           <>
             <div className="text-center mb-8">
@@ -240,7 +352,7 @@ const Vote = () => {
                 Obrigado pelo seu voto! 🎉
               </h2>
               <p className="text-gray-600 mb-4">
-                Você votou no <strong>{selectedLogoData?.name}</strong>
+                Você votou no <strong>{selectedLogoData?.nome}</strong>
               </p>
               <div className="inline-block bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="w-4 h-4 inline mr-1" />
@@ -265,21 +377,19 @@ const Vote = () => {
                     <div key={logo.id} className="relative">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">鳥</span>
-                          </div>
+                          <img src={logo.url} alt="" className="w-10 h-10 rounded-full object-cover" />
                           <div>
                             <h4 className="font-bold text-gray-800 flex items-center">
-                              {logo.name}
+                              {logo.nome}
                               {isWinning && <Trophy className="w-4 h-4 text-yellow-500 ml-2" />}
                               {isUserChoice && <Heart className="w-4 h-4 text-red-500 ml-2" />}
                             </h4>
-                            <p className="text-sm text-gray-600">{logo.style}</p>
+                            <p className="text-sm text-gray-600">{logo.descricao}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-800">{percentage}%</div>
-                          <div className="text-sm text-gray-500">{votes[logo.id]} votos</div>
+                          <div className="text-sm text-gray-500">{votes[logo.id] || 0} votos</div>
                         </div>
                       </div>
                       
@@ -308,17 +418,19 @@ const Vote = () => {
               </div>
 
               {/* Winner Announcement */}
-              <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                <div className="text-center">
-                  <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                  <h4 className="text-lg font-bold text-gray-800 mb-2">
-                    🏆 Liderando: {getWinningLogo()?.name}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {getWinningLogo()?.description}
-                  </p>
+              {getWinningLogo() && (
+                <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                  <div className="text-center">
+                    <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                    <h4 className="text-lg font-bold text-gray-800 mb-2">
+                      🏆 Liderando: {getWinningLogo()?.nome}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {getWinningLogo()?.descricao}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Next Steps */}
@@ -350,56 +462,66 @@ const Vote = () => {
               </button>
             </div>
           </>
+        ) : (
+          /* Loading or No Data */
+          <div className="text-center py-12">
+            <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando opções de logos...</p>
+          </div>
         )}
 
         {/* Footer Info */}
-        <div className="mt-12 text-center">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 max-w-2xl mx-auto">
-            <h4 className="font-bold text-gray-800 mb-3">Por que sua escolha importa?</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <div className="w-10 h-10 bg-red-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-white" />
+        {logos.length > 0 && (
+          <>
+            <div className="mt-12 text-center">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 max-w-2xl mx-auto">
+                <h4 className="font-bold text-gray-800 mb-3">Por que sua escolha importa?</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-red-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <Heart className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-gray-600">
+                      <strong>Identidade</strong><br />
+                      Representa nossa comunidade
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-gray-600">
+                      <strong>União</strong><br />
+                      Escolha coletiva da família Nipo
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-green-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-gray-600">
+                      <strong>Futuro</strong><br />
+                      Marca nossa história juntos
+                    </p>
+                  </div>
                 </div>
-                <p className="text-gray-600">
-                  <strong>Identidade</strong><br />
-                  Representa nossa comunidade
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 bg-blue-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-gray-600">
-                  <strong>União</strong><br />
-                  Escolha coletiva da família Nipo
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 bg-green-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-gray-600">
-                  <strong>Futuro</strong><br />
-                  Marca nossa história juntos
-                </p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <footer className="text-center mt-12 py-8 border-t border-red-200">
-          <p className="text-gray-600 font-medium mb-1">
-            Nipo School App &copy; 2025
-          </p>
-          <p className="text-red-500 text-sm font-bold">
-            Um som por vez. Uma geração por vez.
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-            Votação encerra em 31/12/2025 • Resultado será anunciado em janeiro
-          </p>
-        </footer>
+            {/* Footer */}
+            <footer className="text-center mt-12 py-8 border-t border-red-200">
+              <p className="text-gray-600 font-medium mb-1">
+                Nipo School App &copy; 2025
+              </p>
+              <p className="text-red-500 text-sm font-bold">
+                Um som por vez. Uma geração por vez.
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Votação encerra em 31/12/2025 • Resultado será anunciado em janeiro
+              </p>
+            </footer>
+          </>
+        )}
       </div>
 
       {/* Floating Elements */}
@@ -412,6 +534,14 @@ const Vote = () => {
       <div className="fixed top-1/2 left-4 text-red-200 text-xl animate-bounce opacity-20 pointer-events-none" style={{animationDelay: '2s'}}>
         ❤️
       </div>
+
+      {/* Click outside to close menu */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
     </div>
   );
 };

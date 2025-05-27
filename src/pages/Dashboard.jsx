@@ -23,19 +23,45 @@ import { useModules } from '../shared/hooks/useModules';
 import { useAchievements } from '../shared/hooks/useAchievements';
 import { useProgress } from '../shared/hooks/useProgress';
 import { useDevotionals } from '../shared/hooks/useDevotionals';
-
+import { supabase } from '../shared/lib/supabase/supabaseClient';
 
 const Dashboard = () => {
   const { user, userProfile, logout } = useAuth();
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
   const [greeting, setGreeting] = useState('');
+  
+  // Estados para votação
+  const [votingData, setVotingData] = useState([]);
+  const [userVotedLogo, setUserVotedLogo] = useState(null);
 
   // Hooks reais do Supabase
   const { modules, loading: modulesLoading, getModuleStats } = useModules();
   const { loading: achievementsLoading, getAchievementStats, getRecentAchievements } = useAchievements();
   const { loading: progressLoading, getProgressStats } = useProgress();
   const { loading: devotionalsLoading, getTodayDevotional } = useDevotionals();
+
+  // Função para buscar dados de votação
+  const fetchVotingData = async () => {
+    try {
+      const { data: votosData, error: votosError } = await supabase
+        .from('view_placar_logos')
+        .select('*')
+        .order('votos', { ascending: false });
+
+      if (votosError) throw votosError;
+      
+      setVotingData(votosData || []);
+      
+      // Encontrar o logo que o usuário votou
+      if (userProfile?.voted_logo) {
+        const logoVotado = votosData?.find(logo => logo.id === userProfile.voted_logo);
+        setUserVotedLogo(logoVotado);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados de votação:', error);
+    }
+  };
 
   // Evita problemas de hydration
   useEffect(() => {
@@ -44,7 +70,12 @@ const Dashboard = () => {
     if (hour < 12) setGreeting('おはよう');
     else if (hour < 18) setGreeting('こんにちは');
     else setGreeting('こんばんは');
-  }, []);
+    
+    // Buscar dados de votação quando userProfile estiver disponível
+    if (userProfile) {
+      fetchVotingData();
+    }
+  }, [userProfile]);
 
   if (!mounted) {
     return (
@@ -193,40 +224,187 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Profile Card */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-8 border border-red-100">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <span className="text-2xl sm:text-3xl mr-3">🎵</span>
-            Seu Perfil Musical
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
-              <span className="font-semibold text-gray-700 flex items-center">
-                <span className="mr-2 text-xl">{getInstrumentEmoji(userProfile?.instrument)}</span>
-                Instrumento:
-              </span>
-              <span className="text-gray-800 font-bold">{userProfile?.instrument || "Não cadastrado"}</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-              <span className="font-semibold text-gray-700 flex items-center">
-                <span className="mr-2 text-xl">🎂</span>
-                Nascimento:
-              </span>
-              <span className="text-gray-800 font-bold">{userProfile?.dob || "Não informado"}</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-              <span className="font-semibold text-gray-700 flex items-center">
-                <span className="mr-2 text-xl">🗳️</span>
-                Votação Logo:
-              </span>
-              {userProfile?.has_voted ? (
-                <span className="text-green-600 flex items-center font-bold">
-                  <span className="mr-2">✅</span>
-                  Concluído
+        {/* Profile Card + Batalha dos Logos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          
+          {/* Profile Card - Mantido igual */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span className="text-2xl sm:text-3xl mr-3">🎵</span>
+              Seu Perfil Musical
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
+                <span className="font-semibold text-gray-700 flex items-center">
+                  <span className="mr-2 text-xl">{getInstrumentEmoji(userProfile?.instrument)}</span>
+                  Instrumento:
                 </span>
+                <span className="text-gray-800 font-bold">{userProfile?.instrument || "Não cadastrado"}</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <span className="font-semibold text-gray-700 flex items-center">
+                  <span className="mr-2 text-xl">🎂</span>
+                  Nascimento:
+                </span>
+                <span className="text-gray-800 font-bold">{userProfile?.dob || "Não informado"}</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                <span className="font-semibold text-gray-700 flex items-center">
+                  <span className="mr-2 text-xl">🗳️</span>
+                  Votação Logo:
+                </span>
+                {userProfile?.has_voted ? (
+                  <div className="text-right">
+                    <span className="text-green-600 flex items-center font-bold text-sm">
+                      <span className="mr-2">✅</span>
+                      {userVotedLogo?.nome || 'Concluído'}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-red-600 font-bold">Pendente</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* NOVA SEÇÃO: Batalha dos Logos */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-purple-100 overflow-hidden">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <span className="text-lg font-bold">🎵</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Batalha dos Logos</h3>
+                    <p className="text-purple-100 text-xs">
+                      {votingData.reduce((sum, logo) => sum + (logo.votos || 0), 0)} votos • Encerra 22/02
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xl font-bold">🏆</div>
+                  <div className="text-purple-100 text-xs">Em disputa</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4">
+              {/* Status do Usuário */}
+              {userProfile?.has_voted ? (
+                <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center space-x-2">
+                    {userVotedLogo?.url && (
+                      <img 
+                        src={userVotedLogo.url} 
+                        alt={userVotedLogo.nome}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-green-500"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-green-800 font-medium text-sm">
+                        ✅ Você votou no <strong>{userVotedLogo?.nome || 'seu logo'}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <span className="text-red-600 font-bold">Pendente</span>
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <p className="text-orange-800 font-medium text-sm">
+                      ⏳ <strong>Seu voto é importante!</strong>
+                    </p>
+                    <button
+                      onClick={() => navigate('/vote')}
+                      className="bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 transition-colors text-xs font-medium"
+                    >
+                      Votar
+                    </button>
+                  </div>
+                </div>
               )}
+
+              {/* Placar */}
+              {votingData.length > 0 ? (
+                <div className="space-y-3">
+                  {votingData.slice(0, 3).map((logo, index) => {
+                    const totalVotes = votingData.reduce((sum, l) => sum + (l.votos || 0), 0);
+                    const percentage = totalVotes > 0 ? Math.round((logo.votos / totalVotes) * 100) : 0;
+                    const isLeading = index === 0;
+                    const isUserChoice = logo.id === userProfile?.voted_logo;
+                    
+                    return (
+                      <div 
+                        key={logo.id}
+                        className={`flex items-center space-x-3 p-3 rounded-lg transition-all ${
+                          isLeading 
+                            ? 'bg-yellow-50 border border-yellow-200' 
+                            : isUserChoice 
+                              ? 'bg-purple-50 border border-purple-200'
+                              : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="relative">
+                          <img 
+                            src={logo.url} 
+                            alt={logo.nome}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                          {isLeading && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">1</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-gray-800 text-sm truncate flex items-center">
+                              {logo.nome}
+                              {isLeading && <span className="ml-1 text-xs">🏆</span>}
+                              {isUserChoice && <span className="ml-1 text-xs">❤️</span>}
+                            </h4>
+                            <div className="text-right">
+                              <span className="font-bold text-gray-800 text-sm">{percentage}%</span>
+                              <span className="text-gray-500 text-xs ml-1">({logo.votos})</span>
+                            </div>
+                          </div>
+                          
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-1000 ${
+                                isLeading 
+                                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                                  : isUserChoice
+                                    ? 'bg-gradient-to-r from-purple-400 to-pink-500'
+                                    : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-sm">Carregando placar...</p>
+                </div>
+              )}
+
+              {/* Action Button */}
+              <div className="mt-4">
+                <button
+                  onClick={() => navigate('/vote')}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-sm font-medium flex items-center justify-center space-x-2"
+                >
+                  <span className="text-lg">👁️</span>
+                  <span>Ver Detalhes Completos</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

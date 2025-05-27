@@ -6,6 +6,7 @@ import { useAuth } from '../shared/contexts/AuthContext';
 import Dashboard from '../pages/Dashboard';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import ConfirmEmail from '../pages/ConfirmEmail';
 import Vote from '../pages/Vote';
 
 // Componente de Loading
@@ -92,6 +93,15 @@ const AppRouter = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/confirmacao" 
+        element={
+          <PublicRoute>
+            <ConfirmEmail />
+          </PublicRoute>
+        }
+      />
+
       
       {/* Futuras rotas protegidas */}
       <Route 
