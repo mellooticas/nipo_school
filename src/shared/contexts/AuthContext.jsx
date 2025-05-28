@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase/supabaseClient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,20 +17,46 @@ export const AuthProvider = ({ children }) => {
     setMounted(true);
   }, []);
 
-  // Redirecionamento baseado no voto
-    const redirectByVote = (profile) => {
+  // Redirecionamento baseado no voto e tipo de usuário
+  const redirectByVote = (profile) => {
     console.log('Redirecionando com perfil:', profile);
     console.log('has_voted?', profile?.has_voted);
+    console.log('tipo_usuario:', profile?.tipo_usuario);
+    console.log('current path:', location.pathname);
 
     if (!profile) return;
 
-    if (profile.has_voted === true) {
-      navigate('/dashboard');
-    } else {
+    // Se o usuário ainda não votou, sempre vai para votação
+    if (profile.has_voted !== true) {
       navigate('/vote');
+      return;
     }
-  };
 
+    // Se já votou, verificar se está tentando acessar uma área específica
+    const currentPath = location.pathname;
+    
+    // Rotas que não devemos redirecionar automaticamente
+    const specificRoutes = [
+      '/professores',
+      '/modulos', 
+      '/conquistas',
+      '/devocional',
+      '/perfil'
+    ];
+
+    // Se já está em uma rota específica, não redirecionar
+    const isInSpecificRoute = specificRoutes.some(route => 
+      currentPath.startsWith(route)
+    );
+
+    if (isInSpecificRoute) {
+      console.log('Usuário já está em rota específica, mantendo posição');
+      return;
+    }
+
+    // Se não está em rota específica, redirecionar para dashboard padrão
+    navigate('/dashboard');
+  };
 
   // Função para buscar perfil
   const fetchUserProfile = async (userId) => {
@@ -70,7 +97,11 @@ export const AuthProvider = ({ children }) => {
           if (session?.user) {
             setUser(session.user);
             const profile = await fetchUserProfile(session.user.id);
-            redirectByVote(profile);
+            
+            // Só redirecionar se não estiver em página específica
+            if (!location.pathname.startsWith('/professores')) {
+              redirectByVote(profile);
+            }
           } else {
             setUser(null);
             setUserProfile(null);
@@ -95,7 +126,13 @@ export const AuthProvider = ({ children }) => {
                 }, 2000);
               } else {
                 const profile = await fetchUserProfile(session.user.id);
-                redirectByVote(profile);
+                
+                // Só redirecionar se não for evento de refresh/reload em página específica
+                if (event === 'INITIAL_SESSION' && location.pathname.startsWith('/professores')) {
+                  console.log('Sessão inicial em área de professores, não redirecionando');
+                } else {
+                  redirectByVote(profile);
+                }
               }
 
             } else {
@@ -106,7 +143,6 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
           }
         );
-
 
         return () => {
           subscription.unsubscribe();
@@ -125,7 +161,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       cleanup.then(fn => fn?.());
     };
-  }, [mounted]);
+  }, [mounted, location.pathname]);
 
   // Métodos de autenticação
   const login = async (email, password) => {
@@ -163,6 +199,7 @@ export const AuthProvider = ({ children }) => {
             full_name: userData.fullName || '',
             dob: userData.dob || '',
             instrument: userData.instrument || '',
+            tipo_usuario: userData.tipo_usuario || 'aluno', // Adicionar tipo_usuario
             user_level: 'beginner',
             theme_preference: 'light',
             notification_enabled: true,

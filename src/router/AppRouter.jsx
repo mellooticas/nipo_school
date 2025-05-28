@@ -2,12 +2,20 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../shared/contexts/AuthContext';
 
-// Import das páginas
+// Import das páginas existentes
 import Dashboard from '../pages/Dashboard';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import ConfirmEmail from '../pages/ConfirmEmail';
 import Vote from '../pages/Vote';
+
+// 🎯 Import das páginas dos professores
+import ProfessoresLayout from '../pages/professores/ProfessoresLayout';
+import ProfessoresDashboard from '../pages/professores/ProfessoresDashboard';
+// import ProfessoresConteudos from '../pages/professores/ProfessoresConteudos';
+// import ProfessoresNovo from '../pages/professores/ProfessoresNovo';
+// import ProfessoresMinhaArea from '../pages/professores/ProfessoresMinhaArea';
+// import ProfessoresEstatisticas from '../pages/professores/ProfessoresEstatisticas';
 
 // Componente de Loading
 const LoadingScreen = () => (
@@ -29,6 +37,24 @@ const ProtectedRoute = ({ children }) => {
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// 🎯 Componente de Proteção para Professores
+const ProfessorRoute = ({ children }) => {
+  const { user, userProfile, loading } = useAuth();
+  
+  if (loading) return <LoadingScreen />;
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Verificar se é professor, pastor ou admin
+  if (!userProfile || !['professor', 'pastor', 'admin'].includes(userProfile.tipo_usuario)) {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return children;
@@ -93,6 +119,7 @@ const AppRouter = () => {
           </ProtectedRoute>
         } 
       />
+
       <Route 
         path="/confirmacao" 
         element={
@@ -102,8 +129,30 @@ const AppRouter = () => {
         }
       />
 
-      
-      {/* Futuras rotas protegidas */}
+      {/* ==========================================
+          🎯 ÁREA DOS PROFESSORES - ROTAS PROTEGIDAS
+          ========================================== */}
+      <Route 
+        path="/professores" 
+        element={
+          <ProfessorRoute>
+            <ProfessoresLayout />
+          </ProfessorRoute>
+        }
+      >
+        {/* Dashboard dos professores */}
+        <Route index element={<ProfessoresDashboard />} />
+        
+        {/* Rotas que vamos criar depois - comentadas por enquanto */}
+        {/* <Route path="conteudos" element={<ProfessoresConteudos />} />
+        <Route path="conteudos/:id" element={<ProfessoresConteudoDetalhes />} />
+        <Route path="novo" element={<ProfessoresNovo />} />
+        <Route path="minha-area" element={<ProfessoresMinhaArea />} />
+        <Route path="estatisticas" element={<ProfessoresEstatisticas />} />
+        <Route path="categoria/:categoria" element={<ProfessoresCategoria />} /> */}
+      </Route>
+
+      {/* Futuras rotas protegidas existentes */}
       <Route 
         path="/modulos" 
         element={
@@ -183,4 +232,3 @@ const AppRouter = () => {
 };
 
 export default AppRouter;
-

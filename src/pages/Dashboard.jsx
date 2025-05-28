@@ -25,6 +25,9 @@ import { useProgress } from '../shared/hooks/useProgress';
 import { useDevotionals } from '../shared/hooks/useDevotionals';
 import { supabase } from '../shared/lib/supabase/supabaseClient';
 
+// 🎯 IMPORTAR O BANNER DOS PROFESSORES
+import ProfessorAccessBanner from '../components/professores/ProfessorAccessBanner';
+
 const Dashboard = () => {
   const { user, userProfile, logout } = useAuth();
   const navigate = useNavigate();
@@ -170,8 +173,11 @@ const Dashboard = () => {
             <span className="inline-block animate-bounce ml-2">👋</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 mb-2">Bem-vindo à Nipo School</p>
-          <p className="text-sm text-red-500 font-medium">🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”</p>
+          <p className="text-sm text-red-500 font-medium">🎵 "Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha."</p>
         </header>
+
+        {/* 🎯 BANNER DOS PROFESSORES - ADICIONADO AQUI */}
+        <ProfessorAccessBanner />
 
         {/* Progress Circle */}
         <div className="flex justify-center mb-8">
@@ -409,6 +415,9 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Rest of your existing Dashboard content... */}
+        {/* (Mantendo todo o resto igual - módulos, botões de ação, footer, etc.) */}
+
         {/* Recent Modules */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-8 border border-red-100">
           <div className="flex items-center justify-between mb-6">
@@ -509,7 +518,7 @@ const Dashboard = () => {
 
           {/* Devotional Button */}
           <button 
-            onClick={() => navigate('/devocional')}
+            onClick={() => navigate('/devocional')}  
             className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-purple-100 hover:border-purple-300 hover:-translate-y-1"
           >
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -547,7 +556,7 @@ const Dashboard = () => {
             Nipo School App &copy; 2025
           </p>
           <p className="text-red-500 text-sm font-bold">
-            🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”
+            🎵 "Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha."
           </p>
           <p className="text-xs text-gray-400 mt-2">
             Versão Beta • ADNIPO Suzano
