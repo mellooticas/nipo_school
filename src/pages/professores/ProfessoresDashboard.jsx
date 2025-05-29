@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/contexts/AuthContext';
-import { 
-  Plus, 
-  Eye, 
-  Download, 
-  TrendingUp, 
+import {
+  Plus,
+  Eye,
+  Download,
+  TrendingUp,
   BookOpen,
   Video,
   Lightbulb,
@@ -16,9 +16,11 @@ import {
   Grid,
   BarChart3,
   User,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { supabase } from '../../shared/lib/supabase/supabaseClient';
+import AdminAccessBanner from '../../components/professores/AdminAccessBanner';
 
 const ProfessoresDashboard = () => {
   const { userProfile } = useAuth();
@@ -34,9 +36,10 @@ const ProfessoresDashboard = () => {
     }
   });
   const [recentConteudos, setRecentConteudos] = useState([]);
+  const [conteudosDestaque, setConteudosDestaque] = useState([]); // Novo estado para conteúdos em destaque
   const [loading, setLoading] = useState(true);
 
-  // Carregar estatísticas
+  // Carregar estatísticas e conteúdos
   useEffect(() => {
     if (userProfile?.id) {
       loadDashboardData();
@@ -79,8 +82,15 @@ const ProfessoresDashboard = () => {
       const recentContent = conteudos
         .sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em))
         .slice(0, 5);
-      
+
       setRecentConteudos(recentContent);
+
+      // Conteúdos em Destaque (exemplo: os 3 mais visualizados ou com alguma flag 'destaque')
+      // Por simplicidade, vou usar os 3 mais visualizados aqui. Adapte conforme sua lógica de "destaque".
+      const featuredContent = conteudos
+        .sort((a, b) => (b.visualizacoes || 0) - (a.visualizacoes || 0))
+        .slice(0, 3);
+      setConteudosDestaque(featuredContent);
 
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
@@ -141,7 +151,7 @@ const ProfessoresDashboard = () => {
             <span className="ml-1 capitalize">{conteudo.tipo}</span>
           </span>
         </div>
-        
+
         {conteudo.descricao && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2">{conteudo.descricao}</p>
         )}
@@ -157,7 +167,7 @@ const ProfessoresDashboard = () => {
               <span>{conteudo.downloads || 0}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center">
             <Calendar className="w-4 h-4 mr-1" />
             <span>{new Date(conteudo.criado_em).toLocaleDateString('pt-BR')}</span>
@@ -169,241 +179,299 @@ const ProfessoresDashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        {/* Skeleton Loading */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-10 w-10 bg-gray-200 rounded-xl"></div>
-              </div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Banner Administrativo - só aparece para admins */}
+        <AdminAccessBanner />
+
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="space-y-6">
+            {/* Skeleton Loading */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                    <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+                    <div className="h-10 w-10 bg-gray-200 rounded-xl"></div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Breadcrumb */}
-      <nav className="flex items-center space-x-2 text-sm text-gray-500">
-        <Link to="/dashboard" className="hover:text-gray-700 transition-colors">
-          Dashboard Principal
-        </Link>
-        <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">Área dos Professores</span>
-      </nav>
+    <div className="min-h-screen bg-gray-50">
+      {/* Banner Administrativo - só aparece para admins */}
+      <AdminAccessBanner />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Bem-vindo, {userProfile?.full_name || 'Professor'}! 👋
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie seus conteúdos e acompanhe o engajamento dos alunos
-          </p>
-        </div>
-        
-        <div className="mt-4 sm:mt-0 flex space-x-3">
-          <Link
-            to="/professores/novo"
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Criar Conteúdo
-          </Link>
-        </div>
-      </div>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="space-y-8">
+          {/* Breadcrumb */}
+          <nav className="flex items-center space-x-2 text-sm text-gray-500">
+            <Link to="/dashboard" className="hover:text-gray-700 transition-colors">
+              Dashboard Principal
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-gray-900 font-medium">Área dos Professores</span>
+          </nav>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total de Conteúdos"
-          value={stats.totalConteudos}
-          icon={BookOpen}
-          color="bg-blue-500"
-          trend="+12% este mês"
-        />
-        <StatsCard
-          title="Visualizações"
-          value={stats.totalVisualizacoes.toLocaleString()}
-          icon={Eye}
-          color="bg-green-500"
-          trend="+8% esta semana"
-        />
-        <StatsCard
-          title="Downloads"
-          value={stats.totalDownloads.toLocaleString()}
-          icon={Download}
-          color="bg-purple-500"
-          trend="+15% este mês"
-        />
-        <StatsCard
-          title="Engajamento"
-          value="94%"
-          icon={Activity}
-          color="bg-orange-500"
-          trend="+5% esta semana"
-        />
-      </div>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Bem-vindo, {userProfile?.full_name || userProfile?.nome || 'Professor'}! 👋
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gerencie seus conteúdos e acompanhe o engajamento dos alunos
+              </p>
+            </div>
 
-      {/* Conteúdos por Tipo e Recentes */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Gráfico de Tipos */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Conteúdos por Tipo</h3>
-            <div className="space-y-4">
-              {[
-                { tipo: 'video', label: 'Vídeos', count: stats.conteudosPorTipo.video, color: 'bg-blue-500', icon: Video },
-                { tipo: 'sacada', label: 'Sacadas', count: stats.conteudosPorTipo.sacada, color: 'bg-yellow-500', icon: Lightbulb },
-                { tipo: 'devocional', label: 'Devocionais', count: stats.conteudosPorTipo.devocional, color: 'bg-purple-500', icon: Heart },
-                { tipo: 'material', label: 'Materiais', count: stats.conteudosPorTipo.material, color: 'bg-red-500', icon: FileText }
-              ].map((item) => {
-                const IconComponent = item.icon;
-                const percentage = stats.totalConteudos > 0 ? (item.count / stats.totalConteudos) * 100 : 0;
-                
-                return (
-                  <div key={item.tipo} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={`w-8 h-8 ${item.color} rounded-lg flex items-center justify-center mr-3`}>
-                        <IconComponent className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">{item.label}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 ${item.color} rounded-full transition-all duration-300`}
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="mt-4 sm:mt-0 flex space-x-3">
+              <Link
+                to="/professores/novo"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Criar Conteúdo
+              </Link>
             </div>
           </div>
-        </div>
 
-        {/* Conteúdos Recentes */}
-        <div className="lg:col-span-2">
+          {/* Cards de Estatísticas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatsCard
+              title="Total de Conteúdos"
+              value={stats.totalConteudos}
+              icon={BookOpen}
+              color="bg-blue-500"
+              trend="+12% este mês"
+            />
+            <StatsCard
+              title="Visualizações"
+              value={stats.totalVisualizacoes.toLocaleString()}
+              icon={Eye}
+              color="bg-green-500"
+              trend="+8% esta semana"
+            />
+            <StatsCard
+              title="Downloads"
+              value={stats.totalDownloads.toLocaleString()}
+              icon={Download}
+              color="bg-purple-500"
+              trend="+15% este mês"
+            />
+            <StatsCard
+              title="Engajamento"
+              value="94%"
+              icon={Activity}
+              color="bg-orange-500"
+              trend="+5% esta semana"
+            />
+          </div>
+
+          {/* Conteúdos por Tipo e Recentes */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Gráfico de Tipos */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Conteúdos por Tipo</h3>
+                <div className="space-y-4">
+                  {[
+                    { tipo: 'video', label: 'Vídeos', count: stats.conteudosPorTipo.video, color: 'bg-blue-500', icon: Video },
+                    { tipo: 'sacada', label: 'Sacadas', count: stats.conteudosPorTipo.sacada, color: 'bg-yellow-500', icon: Lightbulb },
+                    { tipo: 'devocional', label: 'Devocionais', count: stats.conteudosPorTipo.devocional, color: 'bg-purple-500', icon: Heart },
+                    { tipo: 'material', label: 'Materiais', count: stats.conteudosPorTipo.material, color: 'bg-red-500', icon: FileText }
+                  ].map((item) => {
+                    const IconComponent = item.icon;
+                    const percentage = stats.totalConteudos > 0 ? (item.count / stats.totalConteudos) * 100 : 0;
+
+                    return (
+                      <div key={item.tipo} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className={`w-8 h-8 ${item.color} rounded-lg flex items-center justify-center mr-3`}>
+                            <IconComponent className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">{item.label}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 ${item.color} rounded-full transition-all duration-300`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdos Recentes */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Conteúdos Recentes</h3>
+                  <Link
+                    to="/professores/minha-area"
+                    className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  >
+                    Ver todos →
+                  </Link>
+                </div>
+
+                {recentConteudos.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentConteudos.map((conteudo) => (
+                      <ConteudoCard key={conteudo.id} conteudo={conteudo} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Nenhum conteúdo ainda</h4>
+                    <p className="text-gray-500 mb-4">
+                      Comece criando seu primeiro conteúdo para compartilhar conhecimento!
+                    </p>
+                    <Link
+                      to="/professores/novo"
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar Primeiro Conteúdo
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Conteúdos em Destaque (Novo Bloco) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Conteúdos Recentes</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Conteúdos em Destaque ⭐</h3>
               <Link
-                to="/professores/minha-area"
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                to="/professores/conteudos"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 Ver todos →
               </Link>
             </div>
-
-            {recentConteudos.length > 0 ? (
-              <div className="space-y-3">
-                {recentConteudos.map((conteudo) => (
+            {conteudosDestaque.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {conteudosDestaque.map((conteudo) => (
                   <ConteudoCard key={conteudo.id} conteudo={conteudo} />
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">Nenhum conteúdo ainda</h4>
-                <p className="text-gray-500 mb-4">
-                  Comece criando seu primeiro conteúdo para compartilhar conhecimento!
+                <Lightbulb className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">Nenhum conteúdo em destaque</h4>
+                <p className="text-gray-500">
+                  Marque conteúdos importantes ou com bom desempenho para aparecerem aqui.
                 </p>
-                <Link
-                  to="/professores/novo"
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Conteúdo
-                </Link>
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Actions Rápidas */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/professores/novo"
-            className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
-          >
-            <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3">
-              <Plus className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Criar Conteúdo</p>
-              <p className="text-sm text-gray-500">Nova sacada ou material</p>
-            </div>
-          </Link>
+          {/* Ações Rápidas */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Link
+                to="/professores/novo"
+                className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Criar Conteúdo</p>
+                  <p className="text-sm text-gray-500">Nova sacada ou material</p>
+                </div>
+              </Link>
 
-          <Link
-            to="/professores/conteudos"
-            className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
-          >
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
-              <Grid className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Ver Conteúdos</p>
-              <p className="text-sm text-gray-500">Explorar biblioteca</p>
-            </div>
-          </Link>
+              <Link
+                to="/professores/conteudos"
+                className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                  <Grid className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Ver Conteúdos</p>
+                  <p className="text-sm text-gray-500">Explorar biblioteca</p>
+                </div>
+              </Link>
 
-          <Link
-            to="/professores/estatisticas"
-            className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group"
-          >
-            <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Estatísticas</p>
-              <p className="text-sm text-gray-500">Ver métricas</p>
-            </div>
-          </Link>
+              <Link
+                to="/professores/estatisticas"
+                className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Estatísticas</p>
+                  <p className="text-sm text-gray-500">Ver métricas</p>
+                </div>
+              </Link>
 
-          <Link
-            to="/professores/minha-area"
-            className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group"
-          >
-            <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
-              <User className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Minha Área</p>
-              <p className="text-sm text-gray-500">Meus conteúdos</p>
-            </div>
-          </Link>
-        </div>
-      </div>
+              <Link
+                to="/professores/minha-area"
+                className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Minha Área</p>
+                  <p className="text-sm text-gray-500">Meus conteúdos</p>
+                </div>
+              </Link>
 
-      {/* Dicas e Lembretes */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-6">
-        <div className="flex items-start">
-          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-            <Lightbulb className="w-5 h-5 text-white" />
+              {/* Botão Admin - só aparece para administradores */}
+              {userProfile?.tipo_usuario === 'admin' && (
+                <Link
+                  to="/professores/admin"
+                  className="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 transition-colors group"
+                >
+                  <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-purple-900">Painel Admin</p>
+                    <p className="text-sm text-purple-700">Controle da escola</p>
+                  </div>
+                </Link>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">💡 Dica do Dia</h3>
-            <p className="text-gray-700 mb-3">
-              Para aumentar o engajamento dos seus conteúdos, adicione tags relevantes e use títulos 
-              descritivos que despertem curiosidade nos alunos.
-            </p>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>📚 {stats.totalConteudos} conteúdos criados</span>
-              <span>👀 {stats.totalVisualizacoes} visualizações totais</span>
-              <span>⬇️ {stats.totalDownloads} downloads</span>
+
+          {/* Dicas e Lembretes */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-6">
+            <div className="flex items-start">
+              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">💡 Dica do Dia</h3>
+                <p className="text-gray-700 mb-3">
+                  Para aumentar o engajamento dos seus conteúdos, adicione tags relevantes e use títulos
+                  descritivos que despertem curiosidade nos alunos.
+                </p>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span>📚 {stats.totalConteudos} conteúdos criados</span>
+                  <span>👀 {stats.totalVisualizacoes} visualizações totais</span>
+                  <span>⬇️ {stats.totalDownloads} downloads</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

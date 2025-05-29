@@ -9,13 +9,15 @@ import Register from '../pages/Register';
 import ConfirmEmail from '../pages/ConfirmEmail';
 import Vote from '../pages/Vote';
 
-// 🎯 Import das páginas dos professores
+// 🎯 Import das páginas dos professores - MÓDULO COMPLETO
 import ProfessoresLayout from '../pages/professores/ProfessoresLayout';
 import ProfessoresDashboard from '../pages/professores/ProfessoresDashboard';
-// import ProfessoresConteudos from '../pages/professores/ProfessoresConteudos';
-// import ProfessoresNovo from '../pages/professores/ProfessoresNovo';
-// import ProfessoresMinhaArea from '../pages/professores/ProfessoresMinhaArea';
-// import ProfessoresEstatisticas from '../pages/professores/ProfessoresEstatisticas';
+import ProfessoresConteudos from '../pages/professores/ProfessoresConteudos';
+import ProfessoresMinhaArea from '../pages/professores/ProfessoresMinhaArea';
+import ProfessoresEstatisticas from '../pages/professores/ProfessoresEstatisticas';
+import ProfessoresAdminPanel from '../pages/professores/ProfessoresAdminPanel';
+import ConteudoDetalhes from '../pages/professores/ConteudoDetalhes';
+import FormConteudo from '../components/professores/FormConteudo';
 
 // Componente de Loading
 const LoadingScreen = () => (
@@ -42,7 +44,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// 🎯 Componente de Proteção para Professores
+// 🎯 Componente de Proteção para Professores - ATUALIZADO
 const ProfessorRoute = ({ children }) => {
   const { user, userProfile, loading } = useAuth();
   
@@ -130,7 +132,7 @@ const AppRouter = () => {
       />
 
       {/* ==========================================
-          🎯 ÁREA DOS PROFESSORES - ROTAS PROTEGIDAS
+          🎯 ÁREA DOS PROFESSORES - MÓDULO COMPLETO
           ========================================== */}
       <Route 
         path="/professores" 
@@ -143,16 +145,35 @@ const AppRouter = () => {
         {/* Dashboard dos professores */}
         <Route index element={<ProfessoresDashboard />} />
         
-        {/* Rotas que vamos criar depois - comentadas por enquanto */}
-        {/* <Route path="conteudos" element={<ProfessoresConteudos />} />
-        <Route path="conteudos/:id" element={<ProfessoresConteudoDetalhes />} />
-        <Route path="novo" element={<ProfessoresNovo />} />
+        {/* Lista de todos os conteúdos */}
+        <Route path="conteudos" element={<ProfessoresConteudos />} />
+        
+        {/* Visualizar conteúdo específico */}
+        <Route path="conteudos/:id" element={<ConteudoDetalhes />} />
+        
+        {/* Criar novo conteúdo */}
+        <Route path="novo" element={<FormConteudo />} />
+        
+        {/* Editar conteúdo específico */}
+        <Route path="editar/:id" element={<FormConteudo />} />
+        
+        {/* Área pessoal do professor */}
         <Route path="minha-area" element={<ProfessoresMinhaArea />} />
+        
+        {/* Painel Administrativo (apenas para admins) */}
+        <Route path="admin" element={<ProfessoresAdminPanel />} />
+        
+        {/* Estatísticas e analytics */}
         <Route path="estatisticas" element={<ProfessoresEstatisticas />} />
-        <Route path="categoria/:categoria" element={<ProfessoresCategoria />} /> */}
+        
+        {/* Filtros por categoria */}
+        <Route path="categoria/:categoriaId" element={<ProfessoresConteudos />} />
+        
+        {/* Filtros por tipo */}
+        <Route path="tipo/:tipo" element={<ProfessoresConteudos />} />
       </Route>
 
-      {/* Futuras rotas protegidas existentes */}
+      {/* Outras rotas protegidas existentes */}
       <Route 
         path="/modulos" 
         element={
