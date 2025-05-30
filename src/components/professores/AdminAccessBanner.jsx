@@ -2,13 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/contexts/AuthContext';
 
-const AdminAccessBanner = () => {
-  const { userProfile } = useAuth();
-
-  // Só mostrar para administradores - usar campo real tipo_usuario
-  if (!userProfile || userProfile.tipo_usuario !== 'admin') {
-    return null;
-  }
 
   return (
     <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 text-white shadow-lg">
@@ -77,4 +70,4 @@ const AdminAccessBanner = () => {
   );
 };
 
-export default AdminAccessBanner;
+export default AdminAccessBanner; 

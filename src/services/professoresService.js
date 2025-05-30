@@ -3,7 +3,7 @@ import { supabase } from '../shared/lib/supabase/supabaseClient';
 /**
  * Service para gerenciar conteúdos dos professores
  * Integração completa com Supabase (Database + Storage)
- * ATUALIZADO para estrutura real do banco de dados
+ * NORMALIZADO para Design System Nipo School
  */
 export const professoresService = {
   
@@ -20,8 +20,7 @@ export const professoresService = {
         .from('professores_conteudos')
         .select(`
           *,
-          categorias:professores_categorias(id, nome, icone),
-          autor:profiles(id, nome, email)
+          autor:profiles(id, nome, email, avatar_url)
         `)
         .eq('ativo', true)
         .order('criado_em', { ascending: false });
@@ -35,8 +34,8 @@ export const professoresService = {
         query = query.eq('categoria', filtros.categoria);
       }
       
-      if (filtros.nivel_dificuldade) {
-        query = query.eq('nivel_dificuldade', filtros.nivel_dificuldade);
+      if (filtros.nivel_dificuldade || filtros.nivel) {
+        query = query.eq('nivel_dificuldade', filtros.nivel_dificuldade || filtros.nivel);
       }
       
       if (filtros.visivel !== undefined) {
@@ -59,25 +58,34 @@ export const professoresService = {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Erro ao buscar conteúdos:', error);
+        console.error('🚫 Erro ao buscar conteúdos:', error);
         return { success: false, error: error.message, data: [] };
       }
 
-      // Processar dados antes de retornar
+      // Processar dados seguindo padrão Nipo School
       const processedData = data.map(conteudo => ({
         ...conteudo,
-        autor_nome: conteudo.autor?.nome || 'Autor desconhecido',
-        categoria_nome: conteudo.categoria || 'Sem categoria',
-        categoria_icone: '📚', // Ícone padrão já que não há relação com categorias
-        tags: conteudo.tags || [],
+        // Campos padronizados
+        autor_nome: conteudo.autor?.nome || 'Professor Anônimo',
+        autor_avatar: conteudo.autor?.avatar_url || null,
+        categoria_nome: conteudo.categoria || 'Geral',
+        categoria_icone: this.getCategoriaIcone(conteudo.categoria),
+        tags: Array.isArray(conteudo.tags) ? conteudo.tags : [],
         // Compatibilidade com componentes
-        nivel: conteudo.nivel_dificuldade,
-        atualizado_em: conteudo.editado_em
+        nivel: conteudo.nivel_dificuldade || 'iniciante',
+        atualizado_em: conteudo.editado_em || conteudo.criado_em,
+        imagem_capa: conteudo.thumbnail_url,
+        // Status formatado para UI
+        status_texto: conteudo.visivel ? 'Visível' : 'Oculto',
+        status_cor: conteudo.visivel ? 'success' : 'warning',
+        // Datas formatadas
+        criado_em_formato: this.formatarData(conteudo.criado_em),
+        atualizado_em_formato: this.formatarData(conteudo.editado_em || conteudo.criado_em)
       }));
 
       return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service getConteudos:', error);
+      console.error('🚫 Erro no service getConteudos:', error);
       return { success: false, error: error.message, data: [] };
     }
   },
@@ -98,7 +106,7 @@ export const professoresService = {
         .single();
 
       if (error) {
-        console.error('Erro ao buscar conteúdo:', error);
+        console.error('🚫 Erro ao buscar conteúdo:', error);
         return { success: false, error: error.message, data: null };
       }
 
@@ -107,20 +115,26 @@ export const professoresService = {
 
       const processedData = {
         ...data,
-        autor_nome: data.autor?.nome || 'Autor desconhecido',
+        autor_nome: data.autor?.nome || 'Professor Anônimo',
         autor_avatar: data.autor?.avatar_url,
-        categoria_nome: data.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: data.tags || [],
+        categoria_nome: data.categoria || 'Geral',
+        categoria_icone: this.getCategoriaIcone(data.categoria),
+        tags: Array.isArray(data.tags) ? data.tags : [],
         // Compatibilidade
-        nivel: data.nivel_dificuldade,
-        atualizado_em: data.editado_em,
-        imagem_capa: data.thumbnail_url
+        nivel: data.nivel_dificuldade || 'iniciante',
+        atualizado_em: data.editado_em || data.criado_em,
+        imagem_capa: data.thumbnail_url,
+        // Status formatado
+        status_texto: data.visivel ? 'Visível' : 'Oculto',
+        status_cor: data.visivel ? 'success' : 'warning',
+        // Datas formatadas
+        criado_em_formato: this.formatarData(data.criado_em),
+        atualizado_em_formato: this.formatarData(data.editado_em || data.criado_em)
       };
 
       return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service getConteudoById:', error);
+      console.error('🚫 Erro no service getConteudoById:', error);
       return { success: false, error: error.message, data: null };
     }
   },
@@ -132,30 +146,38 @@ export const professoresService = {
     try {
       const { data, error } = await supabase
         .from('professores_conteudos')
-        .select('*')
+        .select(`
+          *,
+          autor:profiles(id, nome, email, avatar_url)
+        `)
         .eq('criado_por', autorId)
         .eq('ativo', true)
         .order('criado_em', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar conteúdos do autor:', error);
+        console.error('🚫 Erro ao buscar conteúdos do autor:', error);
         return { success: false, error: error.message, data: [] };
       }
 
       const processedData = data.map(conteudo => ({
         ...conteudo,
-        categoria_nome: conteudo.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: conteudo.tags || [],
+        autor_nome: conteudo.autor?.nome || 'Professor Anônimo',
+        autor_avatar: conteudo.autor?.avatar_url,
+        categoria_nome: conteudo.categoria || 'Geral',
+        categoria_icone: this.getCategoriaIcone(conteudo.categoria),
+        tags: Array.isArray(conteudo.tags) ? conteudo.tags : [],
         // Compatibilidade
-        nivel: conteudo.nivel_dificuldade,
-        atualizado_em: conteudo.editado_em,
-        imagem_capa: conteudo.thumbnail_url
+        nivel: conteudo.nivel_dificuldade || 'iniciante',
+        atualizado_em: conteudo.editado_em || conteudo.criado_em,
+        imagem_capa: conteudo.thumbnail_url,
+        // Status
+        status_texto: conteudo.visivel ? 'Visível' : 'Oculto',
+        status_cor: conteudo.visivel ? 'success' : 'warning'
       }));
 
       return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service getConteudosByAutor:', error);
+      console.error('🚫 Erro no service getConteudosByAutor:', error);
       return { success: false, error: error.message, data: [] };
     }
   },
@@ -165,7 +187,7 @@ export const professoresService = {
    */
   async createConteudo(dadosConteudo, arquivos = {}) {
     try {
-      // Primeiro, fazer upload dos arquivos se existirem
+      // Upload de arquivos se existirem
       const urlsArquivos = {};
       
       if (arquivos.arquivo_principal) {
@@ -190,18 +212,18 @@ export const professoresService = {
         }
       }
 
-      // Preparar dados para inserção adaptados à estrutura real
+      // Preparar dados com validações
       const dadosParaInserir = {
-        titulo: dadosConteudo.titulo,
-        tipo: dadosConteudo.tipo,
-        descricao: dadosConteudo.descricao,
-        url_video: dadosConteudo.url_video,
-        categoria: dadosConteudo.categoria || dadosConteudo.categoria_nome,
+        titulo: dadosConteudo.titulo?.trim() || 'Sem título',
+        tipo: dadosConteudo.tipo || 'material',
+        descricao: dadosConteudo.descricao?.trim() || '',
+        url_video: dadosConteudo.url_video?.trim() || null,
+        categoria: dadosConteudo.categoria || dadosConteudo.categoria_nome || 'Geral',
         nivel_dificuldade: dadosConteudo.nivel || dadosConteudo.nivel_dificuldade || 'iniciante',
-        duracao_minutos: dadosConteudo.duracao_minutos || null,
-        tags: dadosConteudo.tags || [],
-        visivel: dadosConteudo.visivel !== undefined ? dadosConteudo.visivel : true,
-        destaque: dadosConteudo.destaque || false,
+        duracao_minutos: parseInt(dadosConteudo.duracao_minutos) || null,
+        tags: Array.isArray(dadosConteudo.tags) ? dadosConteudo.tags : [],
+        visivel: dadosConteudo.visivel !== false, // default true
+        destaque: Boolean(dadosConteudo.destaque),
         ativo: true,
         visualizacoes: 0,
         downloads: 0,
@@ -217,21 +239,22 @@ export const professoresService = {
         .insert([dadosParaInserir])
         .select(`
           *,
-          autor:profiles(id, nome, email)
+          autor:profiles(id, nome, email, avatar_url)
         `)
         .single();
 
       if (error) {
-        console.error('Erro ao criar conteúdo:', error);
+        console.error('🚫 Erro ao criar conteúdo:', error);
         return { success: false, error: error.message };
       }
 
       const processedData = {
         ...data,
-        autor_nome: data.autor?.nome || 'Autor desconhecido',
-        categoria_nome: data.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: data.tags || [],
+        autor_nome: data.autor?.nome || 'Professor Anônimo',
+        autor_avatar: data.autor?.avatar_url,
+        categoria_nome: data.categoria || 'Geral',
+        categoria_icone: this.getCategoriaIcone(data.categoria),
+        tags: Array.isArray(data.tags) ? data.tags : [],
         nivel: data.nivel_dificuldade,
         atualizado_em: data.editado_em,
         imagem_capa: data.thumbnail_url
@@ -239,7 +262,7 @@ export const professoresService = {
 
       return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service createConteudo:', error);
+      console.error('🚫 Erro no service createConteudo:', error);
       return { success: false, error: error.message };
     }
   },
@@ -276,14 +299,14 @@ export const professoresService = {
 
       // Preparar dados para atualização
       const dadosParaAtualizar = {
-        titulo: dadosConteudo.titulo,
+        titulo: dadosConteudo.titulo?.trim(),
         tipo: dadosConteudo.tipo,
-        descricao: dadosConteudo.descricao,
-        url_video: dadosConteudo.url_video,
+        descricao: dadosConteudo.descricao?.trim(),
+        url_video: dadosConteudo.url_video?.trim() || null,
         categoria: dadosConteudo.categoria || dadosConteudo.categoria_nome,
         nivel_dificuldade: dadosConteudo.nivel || dadosConteudo.nivel_dificuldade,
-        duracao_minutos: dadosConteudo.duracao_minutos,
-        tags: dadosConteudo.tags,
+        duracao_minutos: dadosConteudo.duracao_minutos ? parseInt(dadosConteudo.duracao_minutos) : null,
+        tags: Array.isArray(dadosConteudo.tags) ? dadosConteudo.tags : undefined,
         visivel: dadosConteudo.visivel,
         destaque: dadosConteudo.destaque,
         editado_por: dadosConteudo.editado_por || dadosConteudo.criado_por,
@@ -304,21 +327,22 @@ export const professoresService = {
         .eq('id', id)
         .select(`
           *,
-          autor:profiles(id, nome, email)
+          autor:profiles(id, nome, email, avatar_url)
         `)
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar conteúdo:', error);
+        console.error('🚫 Erro ao atualizar conteúdo:', error);
         return { success: false, error: error.message };
       }
 
       const processedData = {
         ...data,
-        autor_nome: data.autor?.nome || 'Autor desconhecido',
-        categoria_nome: data.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: data.tags || [],
+        autor_nome: data.autor?.nome || 'Professor Anônimo',
+        autor_avatar: data.autor?.avatar_url,
+        categoria_nome: data.categoria || 'Geral',
+        categoria_icone: this.getCategoriaIcone(data.categoria),
+        tags: Array.isArray(data.tags) ? data.tags : [],
         nivel: data.nivel_dificuldade,
         atualizado_em: data.editado_em,
         imagem_capa: data.thumbnail_url
@@ -326,7 +350,7 @@ export const professoresService = {
 
       return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service updateConteudo:', error);
+      console.error('🚫 Erro no service updateConteudo:', error);
       return { success: false, error: error.message };
     }
   },
@@ -336,7 +360,6 @@ export const professoresService = {
    */
   async deleteConteudo(id) {
     try {
-      // Soft delete - marcar como inativo
       const { error } = await supabase
         .from('professores_conteudos')
         .update({ 
@@ -346,41 +369,14 @@ export const professoresService = {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao deletar conteúdo:', error);
+        console.error('🚫 Erro ao deletar conteúdo:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Erro no service deleteConteudo:', error);
+      console.error('🚫 Erro no service deleteConteudo:', error);
       return { success: false, error: error.message };
-    }
-  },
-
-  // ==========================================
-  // CATEGORIAS
-  // ==========================================
-
-  /**
-   * Buscar todas as categorias
-   */
-  async getCategorias() {
-    try {
-      const { data, error } = await supabase
-        .from('professores_categorias')
-        .select('*')
-        .eq('ativo', true)
-        .order('ordem', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao buscar categorias:', error);
-        return { success: false, error: error.message, data: [] };
-      }
-
-      return { success: true, data: data || [] };
-    } catch (error) {
-      console.error('Erro no service getCategorias:', error);
-      return { success: false, error: error.message, data: [] };
     }
   },
 
@@ -395,49 +391,12 @@ export const professoresService = {
     try {
       const { data, error } = await supabase
         .from('professores_conteudos')
-        .select('tipo, visivel, visualizacoes, downloads, ativo')
+        .select('tipo, visivel, visualizacoes, downloads, ativo, destaque')
         .eq('ativo', true);
 
       if (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-        return { success: false, error: error.message, data: {} };
-      }
-
-      const stats = {
-        total: data.length,
-        visiveis: data.filter(c => c.visivel).length,
-        ocultos: data.filter(c => !c.visivel).length,
-        visualizacoes: data.reduce((sum, c) => sum + (c.visualizacoes || 0), 0),
-        downloads: data.reduce((sum, c) => sum + (c.downloads || 0), 0),
-        por_tipo: {
-          sacada: data.filter(c => c.tipo === 'sacada').length,
-          video: data.filter(c => c.tipo === 'video').length,
-          devocional: data.filter(c => c.tipo === 'devocional').length,
-          material: data.filter(c => c.tipo === 'material').length
-        }
-      };
-
-      return { success: true, data: stats };
-    } catch (error) {
-      console.error('Erro no service getEstatisticasGerais:', error);
-      return { success: false, error: error.message, data: {} };
-    }
-  },
-
-  /**
-   * Buscar estatísticas de um autor específico
-   */
-  async getEstatisticasAutor(autorId) {
-    try {
-      const { data, error } = await supabase
-        .from('professores_conteudos')
-        .select('tipo, visivel, visualizacoes, downloads, destaque, ativo')
-        .eq('criado_por', autorId)
-        .eq('ativo', true);
-
-      if (error) {
-        console.error('Erro ao buscar estatísticas do autor:', error);
-        return { success: false, error: error.message, data: {} };
+        console.error('🚫 Erro ao buscar estatísticas:', error);
+        return { success: false, error: error.message, data: this.getEstatsVazias() };
       }
 
       const stats = {
@@ -457,42 +416,46 @@ export const professoresService = {
 
       return { success: true, data: stats };
     } catch (error) {
-      console.error('Erro no service getEstatisticasAutor:', error);
-      return { success: false, error: error.message, data: {} };
+      console.error('🚫 Erro no service getEstatisticasGerais:', error);
+      return { success: false, error: error.message, data: this.getEstatsVazias() };
     }
   },
 
   /**
-   * Incrementar visualização de um conteúdo
+   * Buscar estatísticas de um autor específico
    */
-  async incrementarVisualizacao(conteudoId) {
+  async getEstatisticasAutor(autorId) {
     try {
-      const { error } = await supabase.rpc('incrementar_visualizacao', {
-        conteudo_id: conteudoId
-      });
+      const { data, error } = await supabase
+        .from('professores_conteudos')
+        .select('tipo, visivel, visualizacoes, downloads, destaque, ativo')
+        .eq('criado_por', autorId)
+        .eq('ativo', true);
 
       if (error) {
-        console.error('Erro ao incrementar visualização:', error);
+        console.error('🚫 Erro ao buscar estatísticas do autor:', error);
+        return { success: false, error: error.message, data: this.getEstatsVazias() };
       }
-    } catch (error) {
-      console.error('Erro no service incrementarVisualizacao:', error);
-    }
-  },
 
-  /**
-   * Incrementar download de um conteúdo
-   */
-  async incrementarDownload(conteudoId) {
-    try {
-      const { error } = await supabase.rpc('incrementar_download', {
-        conteudo_id: conteudoId
-      });
+      const stats = {
+        total: data.length,
+        visiveis: data.filter(c => c.visivel).length,
+        ocultos: data.filter(c => !c.visivel).length,
+        destaques: data.filter(c => c.destaque).length,
+        visualizacoes: data.reduce((sum, c) => sum + (c.visualizacoes || 0), 0),
+        downloads: data.reduce((sum, c) => sum + (c.downloads || 0), 0),
+        por_tipo: {
+          sacada: data.filter(c => c.tipo === 'sacada').length,
+          video: data.filter(c => c.tipo === 'video').length,
+          devocional: data.filter(c => c.tipo === 'devocional').length,
+          material: data.filter(c => c.tipo === 'material').length
+        }
+      };
 
-      if (error) {
-        console.error('Erro ao incrementar download:', error);
-      }
+      return { success: true, data: stats };
     } catch (error) {
-      console.error('Erro no service incrementarDownload:', error);
+      console.error('🚫 Erro no service getEstatisticasAutor:', error);
+      return { success: false, error: error.message, data: this.getEstatsVazias() };
     }
   },
 
@@ -505,7 +468,6 @@ export const professoresService = {
    */
   async uploadFile(file, fileName, bucket = 'professores-arquivos') {
     try {
-      // Fazer upload do arquivo
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(fileName, file, {
@@ -514,11 +476,10 @@ export const professoresService = {
         });
 
       if (error) {
-        console.error('Erro no upload:', error);
+        console.error('🚫 Erro no upload:', error);
         return { success: false, error: error.message };
       }
 
-      // Obter URL pública
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(fileName);
@@ -530,191 +491,135 @@ export const professoresService = {
         publicUrl: urlData.publicUrl
       };
     } catch (error) {
-      console.error('Erro no service uploadFile:', error);
+      console.error('🚫 Erro no service uploadFile:', error);
       return { success: false, error: error.message };
     }
   },
 
   /**
-   * Deletar arquivo do Supabase Storage
+   * Incrementar visualização de um conteúdo
    */
-  async deleteFile(fileName, bucket = 'professores-arquivos') {
+  async incrementarVisualizacao(conteudoId) {
     try {
-      const { error } = await supabase.storage
-        .from(bucket)
-        .remove([fileName]);
-
-      if (error) {
-        console.error('Erro ao deletar arquivo:', error);
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Erro no service deleteFile:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  /**
-   * Obter URL de download de um arquivo
-   */
-  async getDownloadUrl(fileName, bucket = 'professores-arquivos') {
-    try {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(fileName, 3600); // URL válida por 1 hora
-
-      if (error) {
-        console.error('Erro ao gerar URL de download:', error);
-        return { success: false, error: error.message };
-      }
-
-      return { success: true, url: data.signedUrl };
-    } catch (error) {
-      console.error('Erro no service getDownloadUrl:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // ==========================================
-  // BUSCA E FILTROS AVANÇADOS
-  // ==========================================
-
-  /**
-   * Busca textual avançada
-   */
-  async buscarConteudos(termo, filtros = {}) {
-    try {
-      let query = supabase
-        .from('professores_conteudos')
-        .select(`
-          *,
-          autor:profiles(id, nome, email)
-        `)
-        .eq('visivel', true)
-        .eq('ativo', true);
-
-      // Busca textual
-      if (termo) {
-        query = query.or(`titulo.ilike.%${termo}%,descricao.ilike.%${termo}%`);
-      }
-
-      // Aplicar filtros adicionais
-      Object.entries(filtros).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-          // Mapear campos para estrutura real
-          if (key === 'nivel') {
-            query = query.eq('nivel_dificuldade', value);
-          } else {
-            query = query.eq(key, value);
-          }
-        }
+      // Tentar usar função do banco primeiro
+      const { error: rpcError } = await supabase.rpc('incrementar_visualizacao', {
+        conteudo_id: conteudoId
       });
 
-      query = query.order('criado_em', { ascending: false });
+      // Se a função não existir, fazer update manual
+      if (rpcError && rpcError.message.includes('function')) {
+        const { error } = await supabase
+          .from('professores_conteudos')
+          .update({ 
+            visualizacoes: supabase.raw('visualizacoes + 1'),
+            editado_em: new Date().toISOString()
+          })
+          .eq('id', conteudoId);
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro na busca:', error);
-        return { success: false, error: error.message, data: [] };
+        if (error) {
+          console.error('🚫 Erro ao incrementar visualização (manual):', error);
+        }
+      } else if (rpcError) {
+        console.error('🚫 Erro ao incrementar visualização (RPC):', rpcError);
       }
-
-      const processedData = data.map(conteudo => ({
-        ...conteudo,
-        autor_nome: conteudo.autor?.nome || 'Autor desconhecido',
-        categoria_nome: conteudo.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: conteudo.tags || [],
-        nivel: conteudo.nivel_dificuldade,
-        atualizado_em: conteudo.editado_em,
-        imagem_capa: conteudo.thumbnail_url
-      }));
-
-      return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service buscarConteudos:', error);
-      return { success: false, error: error.message, data: [] };
+      console.error('🚫 Erro no service incrementarVisualizacao:', error);
     }
   },
 
   /**
-   * Buscar conteúdos em destaque
+   * Incrementar download de um conteúdo
    */
-  async getConteudosDestaque(limite = 6) {
+  async incrementarDownload(conteudoId) {
     try {
-      const { data, error } = await supabase
-        .from('professores_conteudos')
-        .select(`
-          *,
-          autor:profiles(id, nome, email)
-        `)
-        .eq('visivel', true)
-        .eq('ativo', true)
-        .eq('destaque', true)
-        .order('criado_em', { ascending: false })
-        .limit(limite);
+      // Tentar usar função do banco primeiro
+      const { error: rpcError } = await supabase.rpc('incrementar_download', {
+        conteudo_id: conteudoId
+      });
 
-      if (error) {
-        console.error('Erro ao buscar conteúdos em destaque:', error);
-        return { success: false, error: error.message, data: [] };
+      // Se a função não existir, fazer update manual
+      if (rpcError && rpcError.message.includes('function')) {
+        const { error } = await supabase
+          .from('professores_conteudos')
+          .update({ 
+            downloads: supabase.raw('downloads + 1'),
+            editado_em: new Date().toISOString()
+          })
+          .eq('id', conteudoId);
+
+        if (error) {
+          console.error('🚫 Erro ao incrementar download (manual):', error);
+        }
+      } else if (rpcError) {
+        console.error('🚫 Erro ao incrementar download (RPC):', rpcError);
       }
-
-      const processedData = data.map(conteudo => ({
-        ...conteudo,
-        autor_nome: conteudo.autor?.nome || 'Autor desconhecido',
-        categoria_nome: conteudo.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: conteudo.tags || [],
-        nivel: conteudo.nivel_dificuldade,
-        atualizado_em: conteudo.editado_em,
-        imagem_capa: conteudo.thumbnail_url
-      }));
-
-      return { success: true, data: processedData };
     } catch (error) {
-      console.error('Erro no service getConteudosDestaque:', error);
-      return { success: false, error: error.message, data: [] };
+      console.error('🚫 Erro no service incrementarDownload:', error);
+    }
+  },
+
+  // ==========================================
+  // UTILITÁRIOS INTERNOS
+  // ==========================================
+
+  /**
+   * Obter ícone da categoria baseado no tipo
+   */
+  getCategoriaIcone(categoria) {
+    const icones = {
+      'sacada': '💡',
+      'video': '📹',
+      'devocional': '🙏',
+      'material': '📚',
+      'apresentacao': '📊',
+      'audio': '🎵',
+      'imagem': '🖼️',
+      'documento': '📄',
+      'planilha': '📈',
+      'geral': '📋',
+      'default': '📚'
+    };
+
+    return icones[categoria?.toLowerCase()] || icones.default;
+  },
+
+  /**
+   * Formatar data para exibição
+   */
+  formatarData(dataString) {
+    if (!dataString) return 'Data não disponível';
+    
+    try {
+      const data = new Date(dataString);
+      return data.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Data inválida';
     }
   },
 
   /**
-   * Buscar conteúdos mais visualizados
+   * Retornar estatísticas vazias em caso de erro
    */
-  async getConteudosMaisVistos(limite = 10) {
-    try {
-      const { data, error } = await supabase
-        .from('professores_conteudos')
-        .select(`
-          *,
-          autor:profiles(id, nome, email)
-        `)
-        .eq('visivel', true)
-        .eq('ativo', true)
-        .order('visualizacoes', { ascending: false })
-        .limit(limite);
-
-      if (error) {
-        console.error('Erro ao buscar conteúdos mais vistos:', error);
-        return { success: false, error: error.message, data: [] };
+  getEstatsVazias() {
+    return {
+      total: 0,
+      visiveis: 0,
+      ocultos: 0,
+      destaques: 0,
+      visualizacoes: 0,
+      downloads: 0,
+      por_tipo: {
+        sacada: 0,
+        video: 0,
+        devocional: 0,
+        material: 0
       }
-
-      const processedData = data.map(conteudo => ({
-        ...conteudo,
-        autor_nome: conteudo.autor?.nome || 'Autor desconhecido',
-        categoria_nome: conteudo.categoria || 'Sem categoria',
-        categoria_icone: '📚',
-        tags: conteudo.tags || [],
-        nivel: conteudo.nivel_dificuldade,
-        atualizado_em: conteudo.editado_em,
-        imagem_capa: conteudo.thumbnail_url
-      }));
-
-      return { success: true, data: processedData };
-    } catch (error) {
-      console.error('Erro no service getConteudosMaisVistos:', error);
-      return { success: false, error: error.message, data: [] };
-    }
+    };
   }
 };
