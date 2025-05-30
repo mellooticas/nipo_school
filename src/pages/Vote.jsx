@@ -609,7 +609,7 @@ const Vote = () => {
         ❤️
       </div>
 
-      {/* Click outside to close menu */}
+      {/* Click outside to close menu */} 
       {showUserMenu && (
         <div 
           className="fixed inset-0 z-40" 

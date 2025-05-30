@@ -10,7 +10,7 @@ function App() {
       <AuthProvider>
         <AppRouter />
       </AuthProvider>
-    </BrowserRouter>
+    </BrowserRouter> 
   );
 }
 

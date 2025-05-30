@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase/supabaseClient';
 
@@ -11,14 +11,25 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  
+  // Refs para evitar loops
+  const hasRedirected = useRef(false);
+  const isRedirecting = useRef(false);
+  const lastProfileFetch = useRef(0);
 
   // Evita hydration issues
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Redirecionamento baseado no voto e tipo de usuário
-  const redirectByVote = (profile) => {
+  // Redirecionamento CONTROLADO (sem loops)
+  const redirectByVote = (profile, force = false) => {
+    // Evitar múltiplos redirects simultâneos
+    if (isRedirecting.current && !force) {
+      console.log('Redirecionamento já em andamento, ignorando...');
+      return;
+    }
+
     console.log('Redirecionando com perfil:', profile);
     console.log('has_voted?', profile?.has_voted);
     console.log('tipo_usuario:', profile?.tipo_usuario);
@@ -26,12 +37,15 @@ export const AuthProvider = ({ children }) => {
 
     if (!profile) return;
 
+    isRedirecting.current = true;
+
     // Se o usuário ainda não votou, sempre vai para votação
     if (profile.has_voted !== true) {
-      // MAS só se não estiver já na página de vote ou em outras páginas específicas
       if (location.pathname !== '/vote') {
-        navigate('/vote');
+        console.log('Redirecionando para vote');
+        navigate('/vote', { replace: true });
       }
+      isRedirecting.current = false;
       return;
     }
 
@@ -45,8 +59,8 @@ export const AuthProvider = ({ children }) => {
       '/conquistas',
       '/devocional',
       '/perfil',
-      '/vote',        // Permitir acesso ao vote mesmo se já votou
-      '/instrumentos' // Permitir acesso aos instrumentos
+      '/vote',
+      '/instrumentos'
     ];
 
     // Se já está em uma rota específica, não redirecionar
@@ -56,18 +70,34 @@ export const AuthProvider = ({ children }) => {
 
     if (isInSpecificRoute) {
       console.log('Usuário já está em rota específica, mantendo posição');
+      isRedirecting.current = false;
       return;
     }
 
-    // Se não está em rota específica, redirecionar para dashboard padrão
-    navigate('/dashboard');
+    // Se não está em rota específica E não redirecionou ainda, ir para dashboard
+    if (!hasRedirected.current) {
+      console.log('Redirecionando para dashboard');
+      navigate('/dashboard', { replace: true });
+      hasRedirected.current = true;
+    }
+
+    isRedirecting.current = false;
   };
 
-  // Função para buscar perfil
-  const fetchUserProfile = async (userId) => {
+  // Função para buscar perfil com CACHE
+  const fetchUserProfile = async (userId, useCache = true) => {
     if (!userId) return null;
 
+    // Cache simples - evitar requests muito frequentes
+    const now = Date.now();
+    if (useCache && (now - lastProfileFetch.current) < 5000) {
+      console.log('Profile cache ainda válido, não buscando novamente');
+      return userProfile;
+    }
+
     try {
+      console.log('Buscando perfil do usuário:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -79,6 +109,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
+      lastProfileFetch.current = now;
       setUserProfile(data);
       return data;
     } catch (error) {
@@ -88,7 +119,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Inicialização da autenticação
+  // Inicialização da autenticação - SEM DEPENDÊNCIA DE location.pathname
   useEffect(() => {
     if (!mounted) return;
 
@@ -96,18 +127,18 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
       try {
+        console.log('🔄 Inicializando autenticação...');
+        
         const { data: { session } } = await supabase.auth.getSession();
 
         if (isMounted) {
           if (session?.user) {
             setUser(session.user);
-            const profile = await fetchUserProfile(session.user.id);
+            const profile = await fetchUserProfile(session.user.id, false);
             
-            // Só redirecionar se não estiver em página específica
-            if (!location.pathname.startsWith('/professores') && 
-                !location.pathname.startsWith('/instrumentos') &&
-                !location.pathname.startsWith('/vote')) {
-              redirectByVote(profile);
+            // Só redirecionar na inicialização se necessário
+            if (location.pathname === '/' || location.pathname === '/login') {
+              redirectByVote(profile, true);
             }
           } else {
             setUser(null);
@@ -116,6 +147,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
 
+        // Listener para mudanças de auth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!isMounted) return;
@@ -128,27 +160,22 @@ export const AuthProvider = ({ children }) => {
               if (event === 'SIGNED_UP') {
                 console.log('Novo usuário detectado, aguardando criação do perfil...');
                 setTimeout(async () => {
-                  const profile = await fetchUserProfile(session.user.id);
-                  redirectByVote(profile);
+                  const profile = await fetchUserProfile(session.user.id, false);
+                  redirectByVote(profile, true);
                 }, 2000);
-              } else {
-                const profile = await fetchUserProfile(session.user.id);
-                
-                // Só redirecionar se não for evento de refresh/reload em página específica
-                if (event === 'INITIAL_SESSION' && (
-                    location.pathname.startsWith('/professores') ||
-                    location.pathname.startsWith('/instrumentos') ||
-                    location.pathname.startsWith('/vote')
-                  )) {
-                  console.log('Sessão inicial em área específica, não redirecionando');
-                } else {
-                  redirectByVote(profile);
-                }
+              } else if (event === 'SIGNED_IN') {
+                const profile = await fetchUserProfile(session.user.id, false);
+                redirectByVote(profile, true);
+              } else if (event === 'INITIAL_SESSION') {
+                // Para INITIAL_SESSION, não redirecionar automaticamente
+                await fetchUserProfile(session.user.id, false);
+                console.log('Sessão inicial carregada, mantendo posição atual');
               }
 
             } else {
               setUser(null);
               setUserProfile(null);
+              hasRedirected.current = false; // Reset redirect flag
             }
 
             setLoading(false);
@@ -172,7 +199,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       cleanup.then(fn => fn?.());
     };
-  }, [mounted, location.pathname]);
+  }, [mounted]); // REMOVIDO location.pathname da dependência
 
   // Métodos de autenticação
   const login = async (email, password) => {
@@ -187,6 +214,7 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       console.log('Login bem-sucedido:', data.user.email);
+      hasRedirected.current = false; // Reset para permitir redirect após login
       return data;
     } catch (error) {
       console.error('Erro no login:', error);
@@ -210,7 +238,7 @@ export const AuthProvider = ({ children }) => {
             full_name: userData.fullName || '',
             dob: userData.dob || '',
             instrument: userData.instrument || '',
-            tipo_usuario: userData.tipo_usuario || 'aluno', // Adicionar tipo_usuario
+            tipo_usuario: userData.tipo_usuario || 'aluno',
             user_level: 'beginner',
             theme_preference: 'light',
             notification_enabled: true,
@@ -226,6 +254,7 @@ export const AuthProvider = ({ children }) => {
         metadata: data.user?.user_metadata
       });
 
+      hasRedirected.current = false; // Reset para permitir redirect após signup
       return data.user;
     } catch (error) {
       console.error('Erro no signup:', error);
@@ -244,6 +273,9 @@ export const AuthProvider = ({ children }) => {
 
       setUser(null);
       setUserProfile(null);
+      hasRedirected.current = false; // Reset redirect flag
+      lastProfileFetch.current = 0; // Reset cache
+      
       console.log('Logout realizado com sucesso');
     } catch (error) {
       console.error('Erro no logout:', error);
@@ -272,6 +304,7 @@ export const AuthProvider = ({ children }) => {
         has_voted: true
       }));
 
+      lastProfileFetch.current = 0; // Invalidar cache
       return data;
     } catch (error) {
       console.error('Erro ao votar:', error);
@@ -297,6 +330,7 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       setUserProfile(data);
+      lastProfileFetch.current = 0; // Invalidar cache
       return data;
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);

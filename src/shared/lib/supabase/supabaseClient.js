@@ -95,4 +95,4 @@ if (import.meta.env.DEV) {
 if (typeof window !== 'undefined') {
   window.testarSupabase = testarConexaoManual;
   window.verificarTabelas = verificarTabelasManual;
-}
+} 

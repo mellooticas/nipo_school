@@ -102,9 +102,9 @@ const InstrumentosLayout = () => {
       {/* Conteúdo principal */}
       <main className="flex-1">
         <Outlet />
-      </main>
+      </main> 
     </div>
   );
 };
 
-export default InstrumentosLayout;
+export default InstrumentosLayout; 

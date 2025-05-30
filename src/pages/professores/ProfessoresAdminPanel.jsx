@@ -405,7 +405,7 @@ const ProfessoresAdminPanel = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Nome</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Nome</th> 
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Instrumento</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Nível</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">Cadastro</th>

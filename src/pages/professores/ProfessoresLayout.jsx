@@ -40,7 +40,7 @@ const ProfessoresLayout = () => {
 
   // Verificar permissões
   useEffect(() => {
-    if (!loading && (!user || !userProfile)) {
+    if (!loading && (!user || !userProfile)) { 
       navigate('/login');
       return;
     }

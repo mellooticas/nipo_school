@@ -460,4 +460,4 @@ export const adminService = {
     cache.clear();
     console.log('🧹 Cache limpo');
   }
-};
+}; 

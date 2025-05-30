@@ -70,7 +70,7 @@ const Register = () => {
     { value: 'flauta', label: '🎶 Flauta', emoji: '🎶' },
     { value: 'trompete', label: '🎺 Trompete', emoji: '🎺' },
     { value: 'trombone', label: '🎺 Trombone', emoji: '🎺' },
-    { value: 'tuba', label: '🎺 Tuba', emoji: '🎺' },
+    { value: 'tuba', label: '🎺 Tuba', emoji: '🎺' }, 
     { value: 'euphonium', label: '🎺 Eufônio', emoji: '🎺' },
     { value: 'violino', label: '🎻 Violino', emoji: '🎻' },
     { value: 'viola', label: '🎻 Viola Clássica', emoji: '🎻' },

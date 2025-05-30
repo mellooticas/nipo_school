@@ -37,7 +37,7 @@ const Dashboard = () => {
   const [mounted, setMounted] = useState(false);
   const [greeting, setGreeting] = useState('');
   
-  // Estados para votação
+  // Estados para votação 
   const [votingData, setVotingData] = useState([]);
   const [userVotedLogo, setUserVotedLogo] = useState(null);
 
