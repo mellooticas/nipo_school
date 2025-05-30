@@ -19,6 +19,11 @@ import ProfessoresAdminPanel from '../pages/professores/ProfessoresAdminPanel';
 import ConteudoDetalhes from '../pages/professores/ConteudoDetalhes';
 import FormConteudo from '../components/professores/FormConteudo';
 
+// 🎵 Import das páginas de instrumentos - NOVO MÓDULO
+import InstrumentosLayout from '../pages/instrumentos/InstrumentosLayout';
+import InstrumentosList from '../pages/instrumentos/InstrumentosList';
+import InstrumentoPagina from '../pages/instrumentos/InstrumentoPagina';
+
 // Componente de Loading
 const LoadingScreen = () => (
   <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center">
@@ -130,6 +135,27 @@ const AppRouter = () => {
           </PublicRoute>
         }
       />
+
+      {/* ==========================================
+          🎵 ÁREA DOS INSTRUMENTOS - NOVO MÓDULO
+          ========================================== */}
+      <Route 
+        path="/instrumentos" 
+        element={
+          <ProtectedRoute>
+            <InstrumentosLayout />
+          </ProtectedRoute>
+        }
+      >
+        {/* Lista de todos os instrumentos */}
+        <Route index element={<InstrumentosList />} />
+        
+        {/* Página específica do instrumento */}
+        <Route path=":instrumentoId" element={<InstrumentoPagina />} />
+        
+        {/* Filtros por categoria (futuro) */}
+        <Route path="categoria/:categoria" element={<InstrumentosList />} />
+      </Route>
 
       {/* ==========================================
           🎯 ÁREA DOS PROFESSORES - MÓDULO COMPLETO

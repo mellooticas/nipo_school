@@ -16,7 +16,10 @@ import {
   Clock,
   Calendar,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Zap,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../shared/contexts/AuthContext';
 import { useModules } from '../shared/hooks/useModules';
@@ -124,6 +127,9 @@ const Dashboard = () => {
   // Loading state quando dados ainda estão carregando
   const isLoading = modulesLoading || achievementsLoading || progressLoading || devotionalsLoading;
 
+  // Determinar tipo de usuário
+  const userType = userProfile?.tipo_usuario || 'aluno';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
       
@@ -172,12 +178,18 @@ const Dashboard = () => {
             {greeting}, {userProfile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}! 
             <span className="inline-block animate-bounce ml-2">👋</span>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-600 mb-2">Bem-vindo à Nipo School</p>
+          <p className="text-lg sm:text-xl text-gray-600 mb-2">
+            Bem-vindo à Nipo School
+            {userType === 'professor' && ' - Área do Professor'}
+            {userType === 'admin' && ' - Administração'}
+          </p>
           <p className="text-sm text-red-500 font-medium">🎵 "Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha."</p>
         </header>
 
-        {/* 🎯 BANNER DOS PROFESSORES - ADICIONADO AQUI */}
-        <ProfessorAccessBanner />
+        {/* 🎯 BANNER DOS PROFESSORES - Mostrar apenas para professores/admins */}
+        {['professor', 'pastor', 'admin'].includes(userType) && (
+          <ProfessorAccessBanner />
+        )}
 
         {/* Progress Circle */}
         <div className="flex justify-center mb-8">
@@ -198,62 +210,165 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Personalizado por tipo de usuário */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-amber-200 text-center">
-            <Star className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {isLoading ? '...' : (userProfile?.total_points || 0)}
-            </p>
-            <p className="text-xs text-gray-600">Pontos</p>
-          </div>
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-red-200 text-center">
-            <Flame className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {isLoading ? '...' : (userProfile?.current_streak || 0)}
-            </p>
-            <p className="text-xs text-gray-600">Dias</p>
-          </div>
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-blue-200 text-center">
-            <BookOpen className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {isLoading ? '...' : progressStats.completedLessons}
-            </p>
-            <p className="text-xs text-gray-600">Aulas</p>
-          </div>
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-emerald-200 text-center">
-            <Trophy className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {isLoading ? '...' : achievementStats.earned}
-            </p>
-            <p className="text-xs text-gray-600">Conquistas</p>
-          </div>
+          {userType === 'aluno' && (
+            <>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-amber-200 text-center">
+                <Star className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">
+                  {isLoading ? '...' : (userProfile?.total_points || 0)}
+                </p>
+                <p className="text-xs text-gray-600">Pontos</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-red-200 text-center">
+                <Flame className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">
+                  {isLoading ? '...' : (userProfile?.current_streak || 0)}
+                </p>
+                <p className="text-xs text-gray-600">Dias</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-blue-200 text-center">
+                <BookOpen className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">
+                  {isLoading ? '...' : progressStats.completedLessons}
+                </p>
+                <p className="text-xs text-gray-600">Aulas</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-emerald-200 text-center">
+                <Trophy className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">
+                  {isLoading ? '...' : achievementStats.earned}
+                </p>
+                <p className="text-xs text-gray-600">Conquistas</p>
+              </div>
+            </>
+          )}
+
+          {userType === 'professor' && (
+            <>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-green-200 text-center">
+                <Users className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-xs text-gray-600">Alunos</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-blue-200 text-center">
+                <BookOpen className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-xs text-gray-600">Turmas</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-purple-200 text-center">
+                <Music className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-xs text-gray-600">Conteúdos</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-orange-200 text-center">
+                <BarChart3 className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-xs text-gray-600">Visualizações</p>
+              </div>
+            </>
+          )}
+
+          {userType === 'admin' && (
+            <>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-blue-200 text-center">
+                <Music className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">23</p>
+                <p className="text-xs text-gray-600">Instrumentos</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-green-200 text-center">
+                <Users className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">9</p>
+                <p className="text-xs text-gray-600">Alunos</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-purple-200 text-center">
+                <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">2</p>
+                <p className="text-xs text-gray-600">Professores</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-red-200 text-center">
+                <Trophy className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">3</p>
+                <p className="text-xs text-gray-600">Turmas Ativas</p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Profile Card + Batalha dos Logos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           
-          {/* Profile Card - Mantido igual */}
+          {/* Profile Card - Personalizado por tipo */}
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <span className="text-2xl sm:text-3xl mr-3">🎵</span>
-              Seu Perfil Musical
+              <span className="text-2xl sm:text-3xl mr-3">
+                {userType === 'aluno' && '🎵'}
+                {userType === 'professor' && '👨‍🏫'}
+                {userType === 'admin' && '⚙️'}
+              </span>
+              {userType === 'aluno' && 'Seu Perfil Musical'}
+              {userType === 'professor' && 'Perfil do Professor'}
+              {userType === 'admin' && 'Perfil Administrativo'}
             </h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
-                <span className="font-semibold text-gray-700 flex items-center">
-                  <span className="mr-2 text-xl">{getInstrumentEmoji(userProfile?.instrument)}</span>
-                  Instrumento:
-                </span>
-                <span className="text-gray-800 font-bold">{userProfile?.instrument || "Não cadastrado"}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <span className="font-semibold text-gray-700 flex items-center">
-                  <span className="mr-2 text-xl">🎂</span>
-                  Nascimento:
-                </span>
-                <span className="text-gray-800 font-bold">{userProfile?.dob || "Não informado"}</span>
-              </div>
+              {userType === 'aluno' && (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">{getInstrumentEmoji(userProfile?.instrument)}</span>
+                      Instrumento:
+                    </span>
+                    <span className="text-gray-800 font-bold">{userProfile?.instrument || "Não cadastrado"}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">🎂</span>
+                      Nascimento:
+                    </span>
+                    <span className="text-gray-800 font-bold">{userProfile?.dob || "Não informado"}</span>
+                  </div>
+                </>
+              )}
+
+              {userType === 'professor' && (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">🎵</span>
+                      Especialidade:
+                    </span>
+                    <span className="text-gray-800 font-bold">{userProfile?.instrument || "Múltiplos"}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">👥</span>
+                      Status:
+                    </span>
+                    <span className="text-green-600 font-bold">Ativo</span>
+                  </div>
+                </>
+              )}
+
+              {userType === 'admin' && (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">⚙️</span>
+                      Cargo:
+                    </span>
+                    <span className="text-gray-800 font-bold">Administrador</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <span className="font-semibold text-gray-700 flex items-center">
+                      <span className="mr-2 text-xl">🔐</span>
+                      Permissões:
+                    </span>
+                    <span className="text-red-600 font-bold">Total</span>
+                  </div>
+                </>
+              )}
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
                 <span className="font-semibold text-gray-700 flex items-center">
                   <span className="mr-2 text-xl">🗳️</span>
@@ -273,7 +388,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* NOVA SEÇÃO: Batalha dos Logos */}
+          {/* Batalha dos Logos - Igual para todos */}
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-purple-100 overflow-hidden">
             
             {/* Header */}
@@ -415,9 +530,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Rest of your existing Dashboard content... */}
-        {/* (Mantendo todo o resto igual - módulos, botões de ação, footer, etc.) */}
-
         {/* Recent Modules */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-8 border border-red-100">
           <div className="flex items-center justify-between mb-6">
@@ -486,51 +598,193 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Action Buttons Grid */}
+        {/* Action Buttons Grid - Personalizado por tipo de usuário */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-          {/* Modules Button */}
-          <button 
-            onClick={() => navigate('/modulos')}
-            className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-blue-100 hover:border-blue-300 hover:-translate-y-1"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <Music className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="font-bold text-gray-800 mb-2 text-lg">Módulos</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {isLoading ? 'Carregando...' : `${moduleStats.total} módulos disponíveis`}
-            </p>
-          </button>
+          
+          {/* Botões para ALUNOS */}
+          {userType === 'aluno' && (
+            <>
+              {/* Meu Instrumento */}
+              <button 
+                onClick={() => navigate('/instrumentos')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-blue-100 hover:border-blue-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Music className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Meu Instrumento</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {userProfile?.instrument ? `Página do ${userProfile.instrument}` : 'Explore instrumentos'}
+                </p>
+              </button>
 
-          {/* Achievements Button */}
-          <button 
-            onClick={() => navigate('/conquistas')}
-            className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-yellow-100 hover:border-yellow-300 hover:-translate-y-1"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <Award className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="font-bold text-gray-800 mb-2 text-lg">Conquistas</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {isLoading ? 'Carregando...' : `${achievementStats.earned} conquistadas`}
-            </p>
-          </button>
+              {/* Módulos */}
+              <button 
+                onClick={() => navigate('/modulos')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-green-100 hover:border-green-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Módulos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {isLoading ? 'Carregando...' : `${moduleStats.total} módulos disponíveis`}
+                </p>
+              </button>
 
-          {/* Devotional Button */}
-          <button 
-            onClick={() => navigate('/devocional')}  
-            className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-purple-100 hover:border-purple-300 hover:-translate-y-1"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <Heart className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="font-bold text-gray-800 mb-2 text-lg">Devocional</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {isLoading ? 'Carregando...' : (todayDevotional ? 'Novo conteúdo disponível' : 'Reflexões diárias')}
-            </p>
-          </button>
+              {/* Conquistas */}
+              <button 
+                onClick={() => navigate('/conquistas')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-yellow-100 hover:border-yellow-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Award className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Conquistas</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {isLoading ? 'Carregando...' : `${achievementStats.earned} conquistadas`}
+                </p>
+              </button>
 
-          {/* Logout Button */}
+              {/* Devocional */}
+              <button 
+                onClick={() => navigate('/devocional')}  
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-purple-100 hover:border-purple-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Heart className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Devocional</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {isLoading ? 'Carregando...' : (todayDevotional ? 'Novo conteúdo disponível' : 'Reflexões diárias')}
+                </p>
+              </button>
+            </>
+          )}
+
+          {/* Botões para PROFESSORES */}
+          {userType === 'professor' && (
+            <>
+              {/* Área do Professor */}
+              <button 
+                onClick={() => navigate('/professores')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-green-100 hover:border-green-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Área do Professor</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Dashboard e gestão de conteúdo
+                </p>
+              </button>
+
+              {/* Meus Instrumentos */}
+              <button 
+                onClick={() => navigate('/instrumentos')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-blue-100 hover:border-blue-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Music className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Meus Instrumentos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Instrumentos que ensino
+                </p>
+              </button>
+
+              {/* Meus Alunos */}
+              <button 
+                onClick={() => navigate('/professores')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-orange-100 hover:border-orange-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Meus Alunos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Acompanhar progresso dos alunos
+                </p>
+              </button>
+
+              {/* Conteúdo */}
+              <button 
+                onClick={() => navigate('/professores/conteudos')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-purple-100 hover:border-purple-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Gerenciar Conteúdo</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Criar e editar materiais
+                </p>
+              </button>
+            </>
+          )}
+
+          {/* Botões para ADMINS */}
+          {userType === 'admin' && (
+            <>
+              {/* Gestão de Instrumentos */}
+              <button 
+                onClick={() => navigate('/instrumentos')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-blue-100 hover:border-blue-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Music className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Instrumentos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Gestão completa de instrumentos
+                </p>
+              </button>
+
+              {/* Gestão de Usuários */}
+              <button 
+                onClick={() => navigate('/professores/admin')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-green-100 hover:border-green-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Usuários</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Alunos, professores e administração
+                </p>
+              </button>
+
+              {/* Área dos Professores */}
+              <button 
+                onClick={() => navigate('/professores')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-purple-100 hover:border-purple-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Área dos Professores</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Dashboard e ferramentas
+                </p>
+              </button>
+
+              {/* Relatórios */}
+              <button 
+                onClick={() => navigate('/professores/estatisticas')}
+                className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-orange-100 hover:border-orange-300 hover:-translate-y-1"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Relatórios</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Estatísticas completas da escola
+                </p>
+              </button>
+            </>
+          )}
+
+          {/* Logout Button - Para todos */}
           <button
             onClick={handleLogout}
             className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border-2 border-gray-200 hover:border-gray-300 hover:-translate-y-1"
@@ -560,6 +814,7 @@ const Dashboard = () => {
           </p>
           <p className="text-xs text-gray-400 mt-2">
             Versão Beta • ADNIPO Suzano
+            {userType !== 'aluno' && ` • ${userType.charAt(0).toUpperCase() + userType.slice(1)}`}
           </p>
         </footer>
       </div>

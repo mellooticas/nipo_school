@@ -28,7 +28,10 @@ export const AuthProvider = ({ children }) => {
 
     // Se o usuário ainda não votou, sempre vai para votação
     if (profile.has_voted !== true) {
-      navigate('/vote');
+      // MAS só se não estiver já na página de vote ou em outras páginas específicas
+      if (location.pathname !== '/vote') {
+        navigate('/vote');
+      }
       return;
     }
 
@@ -41,7 +44,9 @@ export const AuthProvider = ({ children }) => {
       '/modulos', 
       '/conquistas',
       '/devocional',
-      '/perfil'
+      '/perfil',
+      '/vote',        // Permitir acesso ao vote mesmo se já votou
+      '/instrumentos' // Permitir acesso aos instrumentos
     ];
 
     // Se já está em uma rota específica, não redirecionar
@@ -99,7 +104,9 @@ export const AuthProvider = ({ children }) => {
             const profile = await fetchUserProfile(session.user.id);
             
             // Só redirecionar se não estiver em página específica
-            if (!location.pathname.startsWith('/professores')) {
+            if (!location.pathname.startsWith('/professores') && 
+                !location.pathname.startsWith('/instrumentos') &&
+                !location.pathname.startsWith('/vote')) {
               redirectByVote(profile);
             }
           } else {
@@ -128,8 +135,12 @@ export const AuthProvider = ({ children }) => {
                 const profile = await fetchUserProfile(session.user.id);
                 
                 // Só redirecionar se não for evento de refresh/reload em página específica
-                if (event === 'INITIAL_SESSION' && location.pathname.startsWith('/professores')) {
-                  console.log('Sessão inicial em área de professores, não redirecionando');
+                if (event === 'INITIAL_SESSION' && (
+                    location.pathname.startsWith('/professores') ||
+                    location.pathname.startsWith('/instrumentos') ||
+                    location.pathname.startsWith('/vote')
+                  )) {
+                  console.log('Sessão inicial em área específica, não redirecionando');
                 } else {
                   redirectByVote(profile);
                 }
@@ -319,7 +330,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider');
+    throw new Error('useAuth deve ser usado dentro de AuthProvider'); 
   }
   return context;
 };

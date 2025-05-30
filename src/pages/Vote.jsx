@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Check, 
   Heart, 
@@ -21,12 +21,17 @@ import { supabase } from '../shared/lib/supabase/supabaseClient';
 const Vote = () => {
   const { user, userProfile, recordVote, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [logos, setLogos] = useState([]);
   const [votes, setVotes] = useState({});
   const [selectedLogo, setSelectedLogo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Verificar se foi forçado a mostrar (vindo do dashboard)
+  const urlParams = new URLSearchParams(location.search);
+  const forceShow = urlParams.get('from') === 'dashboard';
 
   // Carrega logos e votos do Supabase
   useEffect(() => {
@@ -57,9 +62,12 @@ const Vote = () => {
         }
         setVotes(votosMap);
 
-        // Se usuário já votou, mostrar resultados
-        if (userProfile?.voted_logo) {
+        // Se usuário já votou E não foi forçado a vir aqui, mostrar resultados
+        if (userProfile?.voted_logo && !forceShow) {
           setShowResults(true);
+          setSelectedLogo(userProfile.voted_logo);
+        } else if (userProfile?.voted_logo) {
+          // Se foi forçado (veio do dashboard), apenas definir o logo mas permitir nova votação
           setSelectedLogo(userProfile.voted_logo);
         }
 
@@ -71,7 +79,7 @@ const Vote = () => {
     if (userProfile) {
       fetchData();
     }
-  }, [userProfile]);
+  }, [userProfile, forceShow]);
 
   // Calcular percentuais
   const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0);
@@ -123,6 +131,11 @@ const Vote = () => {
     if (window.confirm('Você tem certeza que quer pular a votação? Você poderá votar depois.')) {
       navigate('/dashboard');
     }
+  };
+
+  // Função para alternar entre votação e resultados
+  const toggleView = () => {
+    setShowResults(!showResults);
   };
 
   const selectedLogoData = logos.find(logo => logo.id === selectedLogo);
@@ -187,6 +200,16 @@ const Vote = () => {
                       <ArrowRight className="w-4 h-4" />
                       <span>Ir para Dashboard</span>
                     </button>
+                    
+                    {/* Novo botão para alternar visualização */}
+                    <button
+                      onClick={toggleView}
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>{showResults ? 'Ver Opções de Voto' : 'Ver Resultados'}</span>
+                    </button>
+
                     <button
                       onClick={handleSkipVoting}
                       className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-orange-600 hover:bg-orange-50"
@@ -213,10 +236,13 @@ const Vote = () => {
               <span className="text-white text-2xl font-bold">鳥</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
-              Escolha o Logo da Nipo School
+              {showResults ? 'Resultados da Votação' : 'Escolha o Logo da Nipo School'}
             </h1>
             <p className="text-gray-600 mb-2">
-              Sua opinião é fundamental para nossa identidade visual
+              {showResults 
+                ? 'Veja como está a disputa em tempo real'
+                : 'Sua opinião é fundamental para nossa identidade visual'
+              }
             </p>
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center">
@@ -227,6 +253,12 @@ const Vote = () => {
                 <Heart className="w-4 h-4 mr-1 text-red-500" />
                 Comunidade ativa
               </div>
+              {userProfile?.has_voted && (
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 mr-1 text-green-500" />
+                  Você já votou
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -242,25 +274,30 @@ const Vote = () => {
                 Qual logo representa melhor a Nipo School?
               </h2>
               <p className="text-gray-600 mb-4">
-                Clique no seu favorito e depois confirme seu voto
+                {userProfile?.has_voted 
+                  ? 'Você já votou, mas pode visualizar as opções novamente'
+                  : 'Clique no seu favorito e depois confirme seu voto'
+                }
               </p>
               
-              {/* Skip Option */}
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 max-w-md mx-auto">
-                <p className="text-orange-700 text-sm mb-2">
-                  <strong>Não quer votar agora?</strong>
-                </p>
-                <p className="text-orange-600 text-xs mb-3">
-                  Você pode pular e votar depois no dashboard
-                </p>
-                <button
-                  onClick={handleSkipVoting}
-                  className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm flex items-center space-x-2 mx-auto"
-                >
-                  <SkipForward className="w-4 h-4" />
-                  <span>Pular por Agora</span>
-                </button>
-              </div>
+              {/* Skip Option - apenas se não votou */}
+              {!userProfile?.has_voted && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="text-orange-700 text-sm mb-2">
+                    <strong>Não quer votar agora?</strong>
+                  </p>
+                  <p className="text-orange-600 text-xs mb-3">
+                    Você pode pular e votar depois no dashboard
+                  </p>
+                  <button
+                    onClick={handleSkipVoting}
+                    className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm flex items-center space-x-2 mx-auto"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span>Pular por Agora</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Logo Options */}
@@ -279,6 +316,13 @@ const Vote = () => {
                   {selectedLogo === logo.id && (
                     <div className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
                       <Check className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+
+                  {/* User's previous choice indicator */}
+                  {userProfile?.voted_logo === logo.id && (
+                    <div className="absolute -top-3 -left-3 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Heart className="w-5 h-5 text-white" />
                     </div>
                   )}
 
@@ -303,7 +347,12 @@ const Vote = () => {
 
                   {/* Logo Info */}
                   <div className="text-center">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">{logo.nome}</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                      {logo.nome}
+                      {userProfile?.voted_logo === logo.id && (
+                        <span className="ml-2 text-sm text-green-600">✓ Seu voto</span>
+                      )}
+                    </h3>
                     <p className="text-sm text-gray-600 mb-3">{logo.descricao}</p>
                   </div>
                 </div>
@@ -311,7 +360,7 @@ const Vote = () => {
             </div>
 
             {/* Vote Button */}
-            {selectedLogo && (
+            {selectedLogo && !userProfile?.has_voted && (
               <div className="text-center">
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 max-w-md mx-auto">
                   <h3 className="text-lg font-bold text-gray-800 mb-2">
@@ -340,23 +389,48 @@ const Vote = () => {
                 </div>
               </div>
             )}
+
+            {/* Message for users who already voted */}
+            {userProfile?.has_voted && (
+              <div className="text-center">
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-6 max-w-md mx-auto">
+                  <div className="w-12 h-12 bg-green-500 rounded-full mx-auto mb-3 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-green-800 mb-2">
+                    Obrigado pelo seu voto!
+                  </h3>
+                  <p className="text-sm text-green-600 mb-4">
+                    Você já participou da votação. Clique abaixo para ver os resultados.
+                  </p>
+                  <button
+                    onClick={() => setShowResults(true)}
+                    className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                  >
+                    Ver Resultados
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         ) : showResults && logos.length > 0 ? (
           /* Results Section */
           <>
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500 rounded-full mb-4">
-                <Check className="w-10 h-10 text-white" />
+                <Trophy className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                Obrigado pelo seu voto! 🎉
+                Resultados em Tempo Real! 🎉
               </h2>
-              <p className="text-gray-600 mb-4">
-                Você votou no <strong>{selectedLogoData?.nome}</strong>
-              </p>
+              {userProfile?.has_voted && (
+                <p className="text-gray-600 mb-4">
+                  Você votou no <strong>{selectedLogoData?.nome}</strong>
+                </p>
+              )}
               <div className="inline-block bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="w-4 h-4 inline mr-1" />
-                +50 pontos conquistados!
+                Total de {totalVotes} votos!
               </div>
             </div>
 
@@ -514,7 +588,7 @@ const Vote = () => {
                 Nipo School App &copy; 2025
               </p>
               <p className="text-red-500 text-sm font-bold">
-                🎵 “Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha.”
+                🎵 "Se não for divertido, ninguém aprende. Se não for fácil, ninguém começa. Se não for TikTokável, ninguém compartilha."
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 Votação encerra em 31/12/2025 • Resultado será anunciado em janeiro
