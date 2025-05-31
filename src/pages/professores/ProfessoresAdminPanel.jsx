@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../shared/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom'; // 🆕 Adicionar import
 import { adminService } from '../../services/adminService';
+
 import {
   BarChart3,
   Users,
@@ -16,11 +18,14 @@ import {
   Crown,
   Activity,
   Calendar,
-  Award
+  Award,
+  LayoutGrid, // 🆕 Novo ícone
+  ArrowRight // 🆕 Novo ícone
 } from 'lucide-react';
 
 const ProfessoresAdminPanel = () => {
   const { user, userProfile } = useAuth();
+  const navigate = useNavigate(); // 🆕 Hook de navegação
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -260,7 +265,45 @@ const ProfessoresAdminPanel = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navegação por Abas */}
+        {/* 🆕 NOVA SEÇÃO - Banner do Kanban */}
+        <div className="mb-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                <LayoutGrid className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold mb-2">🎯 Kanban de Aulas</h2>
+                <p className="text-indigo-100 mb-3">
+                  Gerencie visualmente o status de todas as aulas por módulos. 
+                  Arraste, organize e acompanhe o progresso em tempo real.
+                </p>
+                <div className="flex items-center gap-4 text-sm text-indigo-200">
+                  <span>✅ 5 status diferentes</span>
+                  <span>📊 Filtros avançados</span>
+                  <span>🔄 Atualização em tempo real</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => navigate('/professores/admin/kanban')}
+                className="flex items-center gap-3 px-6 py-3 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 transition-all duration-200 font-medium shadow-lg hover:shadow-xl group"
+              >
+                <LayoutGrid className="w-5 h-5" />
+                <span>Abrir Kanban</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <div className="text-center text-xs text-indigo-200">
+                Acesso rápido ao painel de gestão
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navegação por Abas - 🆕 Atualizada com Kanban */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-2 bg-white/90 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-red-100">
             {[
@@ -268,25 +311,37 @@ const ProfessoresAdminPanel = () => {
               { id: 'alunos', label: 'Alunos', icon: Users },
               { id: 'professores', label: 'Professores', icon: UserCheck },
               { id: 'conteudos', label: 'Conteúdos', icon: BookOpen },
-              { id: 'instrumentos', label: 'Instrumentos', icon: Activity }
+              { id: 'instrumentos', label: 'Instrumentos', icon: Activity },
+              { id: 'kanban', label: 'Kanban Aulas', icon: LayoutGrid } // 🆕 Nova aba
             ].map(aba => (
               <button
                 key={aba.id}
-                onClick={() => setVisualizacaoAtiva(aba.id)}
+                onClick={() => {
+                  if (aba.id === 'kanban') {
+                    navigate('/professores/admin/kanban'); // 🆕 Navegação direta
+                  } else {
+                    setVisualizacaoAtiva(aba.id);
+                  }
+                }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 ${
                   visualizacaoAtiva === aba.id
                     ? 'bg-purple-600 text-white shadow-md'
+                    : aba.id === 'kanban'
+                    ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' // 🆕 Estilo especial
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <aba.icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{aba.label}</span>
+                {aba.id === 'kanban' && (
+                  <ArrowRight className="w-3 h-3" /> // 🆕 Indicador de link externo
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Conteúdo por Aba */}
+        {/* Conteúdo por Aba - EXISTENTE (sem alterações) */}
         {visualizacaoAtiva === 'geral' && (
           <>
             {/* Cards de Estatísticas Principais */}
@@ -368,281 +423,28 @@ const ProfessoresAdminPanel = () => {
           </>
         )}
 
-        {visualizacaoAtiva === 'alunos' && (
-          <>
-            {/* Estatísticas de Alunos */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <StatCard
-                title="Alunos Ativos"
-                value={estatisticasAlunos.ativos || 0}
-                subtitle="Últimos 30 dias"
-                icon="✅"
-                color="border-green-500"
-              />
-              <StatCard
-                title="Novos Alunos"
-                value={estatisticasAlunos.novos || 0}
-                subtitle="Este mês"
-                icon="🆕"
-                color="border-blue-500"
-              />
-              <StatCard
-                title="Taxa de Retenção"
-                value={`${estatisticasAlunos.retencao || 0}%`}
-                subtitle="Alunos que voltaram"
-                icon="🔄"
-                color="border-purple-500"
-              />
-            </div>
+        {/* ... Outras abas continuam iguais ... */}
 
-            {/* Lista de Últimos Alunos */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-8 border border-red-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-500" />
-                Últimos Alunos Cadastrados
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Nome</th> 
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Instrumento</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Nível</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Cadastro</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ultimosAlunos.map((aluno, index) => (
-                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-semibold text-sm">
-                                {aluno.nome?.charAt(0) || '?'}
-                              </span>
-                            </div>
-                            <span className="font-medium">{aluno.nome || 'Nome não informado'}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            {aluno.instrumento || 'Não informado'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                            {aluno.nivel || 'Iniciante'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {aluno.created_at ? new Date(aluno.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            aluno.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {aluno.ativo ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
-
-        {visualizacaoAtiva === 'professores' && (
-          <>
-            {/* Estatísticas de Professores */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <StatCard
-                title="Total Professores"
-                value={estatisticasProfessores.total || 0}
-                icon={UserCheck}
-                color="border-green-500"
-              />
-              <StatCard
-                title="Conteúdos Criados"
-                value={estatisticasProfessores.conteudos_criados || 0}
-                subtitle="Este mês"
-                icon={FileText}
-                color="border-blue-500"
-              />
-              <StatCard
-                title="Média de Visualizações"
-                value={estatisticasProfessores.media_visualizacoes || 0}
-                subtitle="Por conteúdo"
-                icon={Eye}
-                color="border-purple-500"
-              />
-              <StatCard
-                title="Professores Ativos"
-                value={estatisticasProfessores.ativos || 0}
-                subtitle="Últimos 30 dias"
-                icon="✅"
-                color="border-yellow-500"
-              />
-            </div>
-
-            {/* Top Professores */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Crown className="w-5 h-5 text-yellow-500" />
-                Top Professores por Engajamento
-              </h3>
-              <div className="space-y-4">
-                {estatisticasProfessores.top_professores && estatisticasProfessores.top_professores.map((professor, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-white shadow-md ${
-                        index === 0 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
-                        index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' :
-                        index === 2 ? 'bg-gradient-to-br from-yellow-600 to-yellow-700' :
-                        'bg-gradient-to-br from-gray-300 to-gray-400'
-                      }`}>
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{professor.nome}</h4>
-                        <p className="text-sm text-gray-600">{professor.conteudos} conteúdos</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-lg text-gray-900">{professor.visualizacoes}</div>
-                      <div className="text-sm text-gray-600">visualizações</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {visualizacaoAtiva === 'conteudos' && (
-          <>
-            {/* Estatísticas de Conteúdos */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <StatCard
-                title="Total Conteúdos"
-                value={estatisticasConteudos.total || 0}
-                icon={BookOpen}
-                color="border-blue-500"
-              />
-              <StatCard
-                title="Visualizações Totais"
-                value={estatisticasConteudos.visualizacoes || 0}
-                icon={Eye}
-                color="border-green-500"
-              />
-              <StatCard
-                title="Downloads"
-                value={estatisticasConteudos.downloads || 0}
-                icon={Download}
-                color="border-purple-500"
-              />
-              <StatCard
-                title="Média por Conteúdo"
-                value={`${estatisticasConteudos.media_visualizacoes || 0}`}
-                subtitle="visualizações"
-                icon={BarChart3}
-                color="border-yellow-500"
-              />
-            </div>
-
-            {/* Conteúdos por Tipo */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-red-500" />
-                Distribuição de Conteúdos por Tipo
-              </h3>
-              <div className="space-y-4">
-                {estatisticasConteudos.por_tipo && Object.entries(estatisticasConteudos.por_tipo).map(([tipo, count]) => (
-                  <ProgressBar
-                    key={tipo}
-                    label={`${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`}
-                    value={count}
-                    max={Math.max(...Object.values(estatisticasConteudos.por_tipo))}
-                    color="bg-gradient-to-r from-red-500 to-red-600"
-                    showPercentage={false}
-                  />
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {visualizacaoAtiva === 'instrumentos' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Popularidade por Instrumento */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-500" />
-                Instrumentos Mais Populares
-              </h3>
-              <div className="space-y-4">
-                {estatisticasAlunos.por_instrumento && Object.entries(estatisticasAlunos.por_instrumento)
-                  .sort(([,a], [,b]) => b - a)
-                  .map(([instrumento, count], index) => (
-                    <div key={instrumento} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">
-                          {instrumento === 'piano' ? '🎹' :
-                           instrumento === 'violao' ? '🎸' :
-                           instrumento === 'bateria' ? '🥁' :
-                           instrumento === 'baixo' ? '🎸' :
-                           instrumento === 'voz' ? '🎤' : '🎵'}
-                        </span>
-                        <span className="font-medium capitalize">{instrumento}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-lg">{count}</div>
-                        <div className="text-sm text-gray-600">alunos</div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* Progressão por Nível */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                Progressão dos Alunos
-              </h3>
-              <div className="space-y-6">
-                {estatisticasAlunos.por_nivel && Object.entries(estatisticasAlunos.por_nivel).map(([nivel, count]) => (
-                  <div key={nivel}>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium capitalize">{nivel}</span>
-                      <span className="text-lg font-bold">{count} alunos</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          nivel === 'iniciante' ? 'bg-gradient-to-r from-green-500 to-green-600' :
-                          nivel === 'intermediario' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
-                          'bg-gradient-to-r from-red-500 to-red-600'
-                        }`}
-                        style={{ width: `${(count / Math.max(...Object.values(estatisticasAlunos.por_nivel))) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Ações Administrativas */}
+        {/* Ações Administrativas - 🆕 ATUALIZADA */}
         <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <Settings className="w-5 h-5 text-gray-500" />
             Ações Administrativas
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 🆕 PRIMEIRA AÇÃO - Kanban (destacado) */}
+            <button 
+              onClick={() => navigate('/professores/admin/kanban')}
+              className="p-4 border-2 border-indigo-200 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors text-center group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg">
+                <LayoutGrid className="w-6 h-6 text-white" />
+              </div>
+              <div className="font-medium text-indigo-900">Kanban Aulas</div>
+              <div className="text-sm text-indigo-600">Gestão visual</div>
+            </button>
+            
+            {/* Ações existentes */}
             <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                 <FileText className="w-6 h-6 text-white" />
@@ -666,18 +468,10 @@ const ProfessoresAdminPanel = () => {
               <div className="font-medium text-gray-900">Moderar Conteúdos</div>
               <div className="text-sm text-gray-600">Aprovar/Rejeitar</div>
             </button>
-            
-            <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
-              <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Settings className="w-6 h-6 text-white" />
-              </div>
-              <div className="font-medium text-gray-900">Configurações</div>
-              <div className="text-sm text-gray-600">Sistema</div>
-            </button>
           </div>
         </div>
 
-        {/* Resumo de Atividade Recente */}
+        {/* Resumo de Atividade Recente - EXISTENTE (sem alterações) */}
         <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">

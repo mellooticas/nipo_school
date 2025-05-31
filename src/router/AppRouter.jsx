@@ -24,6 +24,10 @@ import InstrumentosLayout from '../pages/instrumentos/InstrumentosLayout';
 import InstrumentosList from '../pages/instrumentos/InstrumentosList';
 import InstrumentoPagina from '../pages/instrumentos/InstrumentoPagina';
 
+// 📋 Import das páginas do Kanban Admin - NOVO MÓDULO
+import Kanban from '../pages/professores/admin/Kanban';
+import AulaDetail from '../pages/professores/admin/aulas/AulaDetail';
+
 // Componente de Loading
 const LoadingScreen = () => (
   <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center">
@@ -188,6 +192,10 @@ const AppRouter = () => {
         
         {/* Painel Administrativo (apenas para admins) */}
         <Route path="admin" element={<ProfessoresAdminPanel />} />
+        
+        {/* 📋 KANBAN ADMIN - ROTAS INTEGRADAS */}
+        <Route path="admin/kanban" element={<Kanban />} />
+        <Route path="admin/aulas/:id" element={<AulaDetail />} />
         
         {/* Estatísticas e analytics */}
         <Route path="estatisticas" element={<ProfessoresEstatisticas />} />
