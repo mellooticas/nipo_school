@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/contexts/AuthContext';
 import { 
@@ -33,23 +33,64 @@ const ProfessoresLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // 🛡️ ANTI-LOOP: Refs para controlar redirects
+  const hasRedirectedAuth = useRef(false);
+  const hasRedirectedPermission = useRef(false);
+  const lastAuthState = useRef(null);
+
   // Evita problemas de hydration
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Verificar permissões
+  // 🛡️ ANTI-LOOP: Verificar permissões COM PROTEÇÃO
   useEffect(() => {
-    if (!loading && (!user || !userProfile)) { 
-      navigate('/login');
+    // ✅ Aguardar loading terminar
+    if (loading) return;
+
+    // ✅ Criar snapshot do estado atual
+    const currentAuthState = `${!!user}-${!!userProfile}-${userProfile?.tipo_usuario}`;
+    
+    // ✅ Evitar re-execução desnecessária
+    if (lastAuthState.current === currentAuthState) return;
+    lastAuthState.current = currentAuthState;
+
+    // ✅ Verificar autenticação (apenas uma vez)
+    if (!user || !userProfile) {
+      if (!hasRedirectedAuth.current) {
+        console.log('🔄 [ProfessoresLayout] Redirecionando para login (sem auth)');
+        hasRedirectedAuth.current = true;
+        navigate('/login', { replace: true });
+      }
       return;
     }
 
-    if (!loading && userProfile && !['professor', 'pastor', 'admin'].includes(userProfile.tipo_usuario)) {
-      navigate('/dashboard');
+    // ✅ Reset flag de auth se usuário voltou
+    hasRedirectedAuth.current = false;
+
+    // ✅ Verificar permissões (apenas uma vez)
+    if (!['professor', 'pastor', 'admin'].includes(userProfile.tipo_usuario)) {
+      if (!hasRedirectedPermission.current) {
+        console.log('🔄 [ProfessoresLayout] Redirecionando para dashboard (sem permissão)');
+        hasRedirectedPermission.current = true;
+        navigate('/dashboard', { replace: true });
+      }
       return;
     }
-  }, [user, userProfile, loading, navigate]);
+
+    // ✅ Reset flag de permissão se usuário tem acesso
+    hasRedirectedPermission.current = false;
+
+  }, [user, userProfile, loading]); // ❌ REMOVIDO navigate das dependências
+
+  // 🛡️ ANTI-LOOP: Reset flags quando location muda
+  useEffect(() => {
+    // Reset flags quando sair da área de professores
+    if (!location.pathname.startsWith('/professores')) {
+      hasRedirectedAuth.current = false;
+      hasRedirectedPermission.current = false;
+    }
+  }, [location.pathname]);
 
   // Fechar sidebar no mobile quando navegar
   useEffect(() => {
@@ -167,8 +208,9 @@ const ProfessoresLayout = () => {
     );
   }
 
+  // 🛡️ ANTI-LOOP: Return early sem navigate se condições não atendidas
   if (!user || !userProfile || !['professor', 'pastor', 'admin'].includes(userProfile.tipo_usuario)) {
-    return null;
+    return null; // ✅ Não renderiza nada, deixa o useEffect lidar com redirect
   }
 
   return (
