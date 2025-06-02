@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../shared/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom'; // 🆕 Adicionar import
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 
-import {
+import {  
   BarChart3,
   Users,
   BookOpen,
@@ -19,13 +19,14 @@ import {
   Activity,
   Calendar,
   Award,
-  LayoutGrid, // 🆕 Novo ícone
-  ArrowRight // 🆕 Novo ícone
+  LayoutGrid,
+  ArrowRight,
+  Music // 🆕 NOVO IMPORT
 } from 'lucide-react';
 
 const ProfessoresAdminPanel = () => {
   const { user, userProfile } = useAuth();
-  const navigate = useNavigate(); // 🆕 Hook de navegação
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -265,7 +266,7 @@ const ProfessoresAdminPanel = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 🆕 NOVA SEÇÃO - Banner do Kanban */}
+        {/* Banner do Kanban */}
         <div className="mb-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-start gap-4">
@@ -303,7 +304,7 @@ const ProfessoresAdminPanel = () => {
           </div>
         </div>
 
-        {/* Navegação por Abas - 🆕 Atualizada com Kanban */}
+        {/* Navegação por Abas - ATUALIZADA */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-2 bg-white/90 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-red-100">
             {[
@@ -311,14 +312,14 @@ const ProfessoresAdminPanel = () => {
               { id: 'alunos', label: 'Alunos', icon: Users },
               { id: 'professores', label: 'Professores', icon: UserCheck },
               { id: 'conteudos', label: 'Conteúdos', icon: BookOpen },
-              { id: 'instrumentos', label: 'Instrumentos', icon: Activity },
-              { id: 'kanban', label: 'Kanban Aulas', icon: LayoutGrid } // 🆕 Nova aba
+              { id: 'instrumentos', label: 'Instrumentos', icon: Music }, // 🆕 NOVA ABA
+              { id: 'kanban', label: 'Kanban Aulas', icon: LayoutGrid }
             ].map(aba => (
               <button
                 key={aba.id}
                 onClick={() => {
                   if (aba.id === 'kanban') {
-                    navigate('/professores/admin/kanban'); // 🆕 Navegação direta
+                    navigate('/professores/admin/kanban');
                   } else {
                     setVisualizacaoAtiva(aba.id);
                   }
@@ -327,21 +328,21 @@ const ProfessoresAdminPanel = () => {
                   visualizacaoAtiva === aba.id
                     ? 'bg-purple-600 text-white shadow-md'
                     : aba.id === 'kanban'
-                    ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' // 🆕 Estilo especial
+                    ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <aba.icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{aba.label}</span>
                 {aba.id === 'kanban' && (
-                  <ArrowRight className="w-3 h-3" /> // 🆕 Indicador de link externo
+                  <ArrowRight className="w-3 h-3" />
                 )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Conteúdo por Aba - EXISTENTE (sem alterações) */}
+        {/* Conteúdo por Aba */}
         {visualizacaoAtiva === 'geral' && (
           <>
             {/* Cards de Estatísticas Principais */}
@@ -423,16 +424,138 @@ const ProfessoresAdminPanel = () => {
           </>
         )}
 
-        {/* ... Outras abas continuam iguais ... */}
+        {/* 🆕 NOVA ABA DE INSTRUMENTOS */}
+        {visualizacaoAtiva === 'instrumentos' && (
+          <>
+            {/* Banner dos Instrumentos */}
+            <div className="mb-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <Music className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold mb-2">🎵 Gestão de Instrumentos</h2>
+                    <p className="text-blue-100 mb-3">
+                      Gerencie todos os instrumentos musicais, professores e alunos da Nipo School.
+                      Visualize estatísticas completas e administre turmas por instrumento.
+                    </p>
+                    <div className="flex items-center gap-4 text-sm text-blue-200">
+                      <span>✅ Sistema completo</span>
+                      <span>📊 Estatísticas detalhadas</span>
+                      <span>🔄 Atualização em tempo real</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={() => navigate('/professores/admin/instruments')}
+                    className="flex items-center gap-3 px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 font-medium shadow-lg hover:shadow-xl group"
+                  >
+                    <Music className="w-5 h-5" />
+                    <span>Gerenciar Instrumentos</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  
+                  <div className="text-center text-xs text-blue-200">
+                    Acesso completo à gestão de instrumentos
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {/* Ações Administrativas - 🆕 ATUALIZADA */}
+            {/* Cards de Estatísticas dos Instrumentos */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border-l-4 border-blue-500 text-center">
+                <Music className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">8</p>
+                <p className="text-xs text-gray-600">Instrumentos</p>
+              </div>
+              
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border-l-4 border-green-500 text-center">
+                <Users className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">156</p>
+                <p className="text-xs text-gray-600">Alunos Total</p>
+              </div>
+              
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border-l-4 border-purple-500 text-center">
+                <UserCheck className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">23</p>
+                <p className="text-xs text-gray-600">Professores</p>
+              </div>
+              
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border-l-4 border-orange-500 text-center">
+                <BookOpen className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">34</p>
+                <p className="text-xs text-gray-600">Turmas</p>
+              </div>
+            </div>
+
+            {/* Ações Rápidas para Instrumentos */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-gray-500" />
+                Ações Rápidas - Sistema de Instrumentos
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button 
+                  onClick={() => navigate('/professores/admin/instruments')}
+                  className="p-4 border-2 border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors text-center group"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg">
+                    <Music className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-medium text-blue-900">Ver Instrumentos</div>
+                  <div className="text-sm text-blue-600">Lista completa</div>
+                </button>
+                
+                <button 
+                  onClick={() => navigate('/professores/admin/instruments')}
+                  className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-medium text-gray-900">Gerenciar Alunos</div>
+                  <div className="text-sm text-gray-600">Por instrumento</div>
+                </button>
+                
+                <button 
+                  onClick={() => navigate('/professores/admin/instruments')}
+                  className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <UserCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-medium text-gray-900">Professores</div>
+                  <div className="text-sm text-gray-600">Por instrumento</div>
+                </button>
+                
+                <button 
+                  onClick={() => navigate('/professores/admin/instruments')}
+                  className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-medium text-gray-900">Relatórios</div>
+                  <div className="text-sm text-gray-600">Estatísticas</div>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Ações Administrativas - ATUALIZADA */}
         <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <Settings className="w-5 h-5 text-gray-500" />
             Ações Administrativas
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 🆕 PRIMEIRA AÇÃO - Kanban (destacado) */}
+            {/* Kanban (destacado) */}
             <button 
               onClick={() => navigate('/professores/admin/kanban')}
               className="p-4 border-2 border-indigo-200 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors text-center group"
@@ -445,83 +568,83 @@ const ProfessoresAdminPanel = () => {
             </button>
             
             {/* Ações existentes */}
-            <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div className="font-medium text-gray-900">Relatório Completo</div>
-              <div className="text-sm text-gray-600">Exportar dados</div>
-            </button>
-            
-            <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="font-medium text-gray-900">Gerenciar Alunos</div>
-              <div className="text-sm text-gray-600">Lista completa</div>
-            </button>
-            
-            <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <div className="font-medium text-gray-900">Moderar Conteúdos</div>
-              <div className="text-sm text-gray-600">Aprovar/Rejeitar</div>
-            </button>
-          </div>
-        </div>
+<button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
+             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+               <FileText className="w-6 h-6 text-white" />
+             </div>
+             <div className="font-medium text-gray-900">Relatório Completo</div>
+             <div className="text-sm text-gray-600">Exportar dados</div>
+           </button>
+           
+           <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
+             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+               <Users className="w-6 h-6 text-white" />
+             </div>
+             <div className="font-medium text-gray-900">Gerenciar Alunos</div>
+             <div className="text-sm text-gray-600">Lista completa</div>
+           </button>
+           
+           <button className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-center group">
+             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+               <BookOpen className="w-6 h-6 text-white" />
+             </div>
+             <div className="font-medium text-gray-900">Moderar Conteúdos</div>
+             <div className="text-sm text-gray-600">Aprovar/Rejeitar</div>
+           </button>
+         </div>
+       </div>
 
-        {/* Resumo de Atividade Recente - EXISTENTE (sem alterações) */}
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Resumo de Atividade Recente
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-700">
-                <div>
-                  <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-500" />
-                    Últimas 24h:
-                  </h4>
-                  <ul className="space-y-1">
-                    <li>• {estatisticasAlunos.novos || 0} novos alunos cadastrados</li>
-                    <li>• {estatisticasProfessores.conteudos_criados || 0} conteúdos publicados</li>
-                    <li>• {estatisticasConteudos.visualizacoes || 0} visualizações totais</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-green-500" />
-                    Destaques:
-                  </h4>
-                  <ul className="space-y-1">
-                    <li>• Piano é o instrumento mais popular</li>
-                    <li>• {Math.round((estatisticasAlunos.retencao || 0))}% de taxa de retenção</li>
-                    <li>• {estatisticasProfessores.ativos || 0} professores ativos</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-purple-500" />
-                    Tendências:
-                  </h4>
-                  <ul className="space-y-1">
-                    <li>• Crescimento de 12% em alunos</li>
-                    <li>• Aumento de 8% nos acessos</li>
-                    <li>• Engajamento em alta</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+       {/* Resumo de Atividade Recente */}
+       <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
+         <div className="flex items-start gap-4">
+           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+             <Calendar className="w-6 h-6 text-white" />
+           </div>
+           <div className="flex-1">
+             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+               Resumo de Atividade Recente
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-700">
+               <div>
+                 <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+                   <Users className="w-4 h-4 text-blue-500" />
+                   Últimas 24h:
+                 </h4>
+                 <ul className="space-y-1">
+                   <li>• {estatisticasAlunos.novos || 0} novos alunos cadastrados</li>
+                   <li>• {estatisticasProfessores.conteudos_criados || 0} conteúdos publicados</li>
+                   <li>• {estatisticasConteudos.visualizacoes || 0} visualizações totais</li>
+                 </ul>
+               </div>
+               <div>
+                 <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+                   <Award className="w-4 h-4 text-green-500" />
+                   Destaques:
+                 </h4>
+                 <ul className="space-y-1">
+                   <li>• Piano é o instrumento mais popular</li>
+                   <li>• {Math.round((estatisticasAlunos.retencao || 0))}% de taxa de retenção</li>
+                   <li>• {estatisticasProfessores.ativos || 0} professores ativos</li>
+                 </ul>
+               </div>
+               <div>
+                 <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+                   <TrendingUp className="w-4 h-4 text-purple-500" />
+                   Tendências:
+                 </h4>
+                 <ul className="space-y-1">
+                   <li>• Crescimento de 12% em alunos</li>
+                   <li>• Aumento de 8% nos acessos</li>
+                   <li>• Engajamento em alta</li>
+                 </ul>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ );
 };
 
 export default ProfessoresAdminPanel;

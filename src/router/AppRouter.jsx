@@ -15,7 +15,7 @@ import ProfessoresDashboard from '../pages/professores/ProfessoresDashboard';
 import ProfessoresConteudos from '../pages/professores/ProfessoresConteudos';
 import ProfessoresMinhaArea from '../pages/professores/ProfessoresMinhaArea';
 import ProfessoresEstatisticas from '../pages/professores/ProfessoresEstatisticas';
-import ProfessoresAdminPanel from '../pages/professores/ProfessoresAdminPanel';
+import ProfessoresAdminPanel from '../pages/admin/ProfessoresAdminPanel';
 import ConteudoDetalhes from '../pages/professores/ConteudoDetalhes';
 import FormConteudo from '../components/professores/FormConteudo';
 
@@ -24,9 +24,13 @@ import InstrumentosLayout from '../pages/instrumentos/InstrumentosLayout';
 import InstrumentosList from '../pages/instrumentos/InstrumentosList';
 import InstrumentoPagina from '../pages/instrumentos/InstrumentoPagina';
 
+// 🆕 Import das páginas de ADMIN DE INSTRUMENTOS - NOVOS
+import AdminInstruments from '../pages/admin/AdminInstruments';
+import AdminInstrumentDetails from '../pages/admin/AdminInstrumentDetails';
+
 // 📋 Import das páginas do Kanban Admin - NOVO MÓDULO
-import Kanban from '../pages/professores/admin/Kanban';
-import AulaDetail from '../pages/professores/admin/aulas/AulaDetail';
+import Kanban from '../pages/admin/Kanban';
+import AulaDetail from '../pages/admin/aulas/AulaDetail';
 
 // Componente de Loading
 const LoadingScreen = () => (
@@ -192,6 +196,10 @@ const AppRouter = () => {
         
         {/* Painel Administrativo (apenas para admins) */}
         <Route path="admin" element={<ProfessoresAdminPanel />} />
+        
+        {/* 🆕 GESTÃO DE INSTRUMENTOS (ADMIN) - NOVAS ROTAS */}
+        <Route path="admin/instruments" element={<AdminInstruments />} />
+        <Route path="admin/instruments/:instrumentoId" element={<AdminInstrumentDetails />} />
         
         {/* 📋 KANBAN ADMIN - ROTAS INTEGRADAS */}
         <Route path="admin/kanban" element={<Kanban />} />

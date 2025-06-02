@@ -270,3 +270,61 @@ export const useInstrumentosComStats = () => {
     error
   };
 };
+// Adicionar estas funções ao hook existente:
+
+export const useInstrumentsPhysical = (instrumentoId = null) => {
+  const [instrumentosFisicos, setInstrumentosFisicos] = useState([]);
+  const [cessoes, setCessoes] = useState([]);
+  const [manutencoes, setManutencoes] = useState([]);
+  const [estatisticasPatrimonio, setEstatisticasPatrimonio] = useState({});
+  const [alertas, setAlertas] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const carregarDadosCompletos = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [
+        fisicosResult,
+        cessoesResult,
+        manutencoesResult,
+        statsResult,
+        alertasResult
+      ] = await Promise.all([
+        instrumentsService.getInstrumentosFisicos(instrumentoId),
+        instrumentsService.getCessoesAtivas(instrumentoId),
+        instrumentsService.getManutencoes(),
+        instrumentsService.getEstatisticasPatrimonio(instrumentoId),
+        instrumentsService.getAlertasVencimento(7)
+      ]);
+
+      if (fisicosResult.success) setInstrumentosFisicos(fisicosResult.data);
+      if (cessoesResult.success) setCessoes(cessoesResult.data);
+      if (manutencoesResult.success) setManutencoes(manutencoesResult.data);
+      if (statsResult.success) setEstatisticasPatrimonio(statsResult.data);
+      if (alertasResult.success) setAlertas(alertasResult.data);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [instrumentoId]);
+
+  useEffect(() => {
+    carregarDadosCompletos();
+  }, [carregarDadosCompletos]);
+
+  return {
+    instrumentosFisicos,
+    cessoes,
+    manutencoes,
+    estatisticasPatrimonio,
+    alertas,
+    loading,
+    error,
+    recarregar: carregarDadosCompletos
+  };
+};

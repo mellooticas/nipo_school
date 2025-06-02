@@ -1,7 +1,7 @@
 // pages/professores/admin/Kanban.jsx
 import React from 'react'
 import { Calendar, LayoutGrid, Plus, Settings } from 'lucide-react'
-import KanbanBoard from '../../../components/kanban/KanbanBoard'
+import KanbanBoard from '../../components/kanban/KanbanBoard'
 
 const Kanban = () => {
   return (
