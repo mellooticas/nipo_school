@@ -193,22 +193,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // LISTENER DE MUDANÇA DE AUTH
         // ========================================
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event: AuthChangeEvent, session: Session | null) => {
+          async (event, session) => {
             if (!isMounted) return;
             
             if (session?.user) {
               setUser(session.user);
               
-              // Usando if/else ao invés de switch para evitar problemas de tipo
-              if (event === 'SIGNED_UP') {
+              // Convertendo para string para comparação segura
+              const eventType = event as string;
+              
+              if (eventType === 'SIGNED_UP') {
                 setTimeout(async () => {
                   const profile = await fetchUserProfile(session.user.id, false);
                   redirectByVote(profile, true);
                 }, 2000);
-              } else if (event === 'SIGNED_IN') {
+              } else if (eventType === 'SIGNED_IN') {
                 const profile = await fetchUserProfile(session.user.id, false);
                 redirectByVote(profile, true);
-              } else if (event === 'INITIAL_SESSION') {
+              } else if (eventType === 'INITIAL_SESSION') {
                 await fetchUserProfile(session.user.id, false);
               }
               // Para outros eventos (TOKEN_REFRESHED, USER_UPDATED, etc), não fazemos nada específico
