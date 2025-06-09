@@ -237,42 +237,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setLoading(false);
         }
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            if (!isMounted) return;
+        // Procure na linha 249 do AuthContext.tsx por algo como:
+// if (event === 'SIGNED_UP') {
 
-            console.log('🔄 Auth state change:', event, session?.user?.id);
+// E substitua toda a seção do onAuthStateChange por esta versão corrigida:
 
-            if (session?.user) {
-              setUser(session.user);
+// Substitua a seção do onAuthStateChange no AuthContext.tsx
+// (geralmente por volta da linha 190-250)
 
-              if (event === 'SIGNED_UP') {
-                console.log('👶 Novo usuário cadastrado');
-                setTimeout(async () => {
-                  const profile = await fetchUserProfile(session.user.id, false);
-                  redirectByVote(profile, true);
-                }, 2000);
-                
-              } else if (event === 'SIGNED_IN') {
-                console.log('🔑 Usuário fez login');
-                const profile = await fetchUserProfile(session.user.id, false);
-                redirectByVote(profile, true);
-                
-              } else if (event === 'INITIAL_SESSION') {
-                console.log('📋 Sessão inicial');
-                await fetchUserProfile(session.user.id, false); 
-              }
+// Listener para mudanças de auth
+const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  async (event, session) => {
+    if (!isMounted) return;
 
-            } else {
-              console.log('👋 Usuário deslogado');
-              setUser(null);
-              setUserProfile(null);
-              profileCache.current = { profile: null, timestamp: 0 };
-            }
+    console.log('🔄 Auth state change:', event, session?.user?.id);
 
-            setLoading(false);
-          }
-        );
+    if (session?.user) {
+      setUser(session.user);
+
+      // ✅ CORREÇÃO: Usar comparação de string simples
+      if (event === 'SIGNED_UP') {
+        console.log('👶 Novo usuário cadastrado');
+        setTimeout(async () => {
+          const profile = await fetchUserProfile(session.user.id, false);
+          redirectByVote(profile, true);
+        }, 2000);
+        
+      } else if (event === 'SIGNED_IN') {
+        console.log('🔑 Usuário fez login');
+        const profile = await fetchUserProfile(session.user.id, false);
+        redirectByVote(profile, true);
+        
+      } else if (event === 'INITIAL_SESSION') {
+        console.log('📋 Sessão inicial');
+        await fetchUserProfile(session.user.id, false); 
+      }
+
+    } else {
+      console.log('👋 Usuário deslogado');
+      setUser(null);
+      setUserProfile(null);
+      profileCache.current = { profile: null, timestamp: 0 };
+    }
+
+    setLoading(false);
+  }
+);
 
         return () => {
           subscription.unsubscribe();

@@ -1,9 +1,23 @@
 // hooks/useSmartRedirect.ts - Hook para redirecionamento inteligente
-
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCallback, useRef } from 'react';
-import { getSmartRedirect, logRedirect } from '../services/redirectService';
-import { UserProfile, RedirectOptions } from '../../types/auth';
+import { getSmartRedirect } from '../services/redirectService';
+
+// ✅ TIPOS LOCAIS (para evitar problemas de import)
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  tipo_usuario: 'aluno' | 'professor' | 'admin' | 'pastor';
+  has_voted: boolean;
+  joined_at: string;
+  [key: string]: any;
+}
+
+interface RedirectOptions {
+  force?: boolean;
+  replace?: boolean;
+}
 
 interface UseSmartRedirectReturn {
   performRedirect: (profile: UserProfile | null, options?: RedirectOptions) => boolean;
@@ -21,18 +35,18 @@ export const useSmartRedirect = (): UseSmartRedirectReturn => {
   ): boolean => {
     // Evitar múltiplos redirects simultâneos
     if (isRedirectingRef.current && !options.force) {
-      logRedirect('SKIP_HOOK', { reason: 'Already redirecting via hook' });
+      console.log('🎯 SKIP_HOOK: Already redirecting via hook');
       return false;
     }
 
     if (!profile) {
-      logRedirect('SKIP_HOOK', { reason: 'No profile provided' });
+      console.log('🎯 SKIP_HOOK: No profile provided');
       return false;
     }
 
     const redirectResult = getSmartRedirect(profile, location.pathname, options);
     
-    logRedirect('HOOK_ANALYSIS', {
+    console.log('🎯 HOOK_ANALYSIS:', {
       profile: profile.tipo_usuario,
       currentPath: location.pathname,
       result: redirectResult
@@ -42,7 +56,7 @@ export const useSmartRedirect = (): UseSmartRedirectReturn => {
       isRedirectingRef.current = true;
       
       try {
-        logRedirect('HOOK_EXECUTING', {
+        console.log('🎯 HOOK_EXECUTING:', {
           from: location.pathname,
           to: redirectResult.targetPath,
           reason: redirectResult.reason
@@ -54,7 +68,7 @@ export const useSmartRedirect = (): UseSmartRedirectReturn => {
         
         return true;
       } catch (error) {
-        console.error('Erro no redirecionamento via hook:', error);
+        console.error('❌ Erro no redirecionamento via hook:', error);
         return false;
       } finally {
         // Reset flag após delay
@@ -69,6 +83,6 @@ export const useSmartRedirect = (): UseSmartRedirectReturn => {
 
   return {
     performRedirect,
-    isRedirecting: isRedirectingRef.current
+    isRedirecting: isRedirectingRef.current 
   };
 };
