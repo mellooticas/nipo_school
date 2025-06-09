@@ -2,9 +2,10 @@
 
 import React, { createContext, useState, useEffect, useContext, useRef, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js'; // ✅ ADICIONE AuthChangeEvent
 import { supabase } from '../lib/supabase/supabaseClient';
 import { getSmartRedirect } from '../services/redirectService';
+
 
 // ============================================================================
 // TIPOS
@@ -247,7 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 // Listener para mudanças de auth
 const { data: { subscription } } = supabase.auth.onAuthStateChange(
-  async (event, session) => {
+  async (event: AuthChangeEvent, session) => { // ✅ TIPAR o event
     if (!isMounted) return;
 
     console.log('🔄 Auth state change:', event, session?.user?.id);
@@ -255,22 +256,30 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(
     if (session?.user) {
       setUser(session.user);
 
-      // ✅ CORREÇÃO: Usar comparação de string simples
-      if (event === 'SIGNED_UP') {
-        console.log('👶 Novo usuário cadastrado');
-        setTimeout(async () => {
+      // ✅ USAR SWITCH em vez de IF para os tipos
+      switch (event) {
+        case 'SIGNED_UP':
+          console.log('👶 Novo usuário cadastrado');
+          setTimeout(async () => {
+            const profile = await fetchUserProfile(session.user.id, false);
+            redirectByVote(profile, true);
+          }, 2000);
+          break;
+          
+        case 'SIGNED_IN':
+          console.log('🔑 Usuário fez login');
           const profile = await fetchUserProfile(session.user.id, false);
           redirectByVote(profile, true);
-        }, 2000);
-        
-      } else if (event === 'SIGNED_IN') {
-        console.log('🔑 Usuário fez login');
-        const profile = await fetchUserProfile(session.user.id, false);
-        redirectByVote(profile, true);
-        
-      } else if (event === 'INITIAL_SESSION') {
-        console.log('📋 Sessão inicial');
-        await fetchUserProfile(session.user.id, false); 
+          break;
+          
+        case 'INITIAL_SESSION':
+          console.log('📋 Sessão inicial');
+          await fetchUserProfile(session.user.id, false);
+          break;
+          
+        default:
+          console.log('🔄 Evento de auth:', event);
+          break;
       }
 
     } else {
