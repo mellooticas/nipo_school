@@ -7,7 +7,7 @@ import React, {
   ReactNode
 } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, AuthChangeEvent } from '@supabase/supabase-js';
+import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/supabaseClient';
 import { getSmartRedirect } from '../services/redirectService';
 
@@ -192,33 +192,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // ========================================
         // LISTENER DE MUDANÇA DE AUTH
         // ========================================
-        // (Checa o tipo corretamente via AuthChangeEvent)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event: AuthChangeEvent, session) => {
+          async (event: AuthChangeEvent, session: Session | null) => {
             if (!isMounted) return;
-            // (Todos os possíveis eventos do AuthChangeEvent)
+            
             if (session?.user) {
               setUser(session.user);
-              switch (event) {
-                case 'SIGNED_UP':
-                  setTimeout(async () => {
-                    const profile = await fetchUserProfile(session.user.id, false);
-                    redirectByVote(profile, true);
-                  }, 2000);
-                  break;
-                case 'SIGNED_IN':
-                  {
-                    const profile = await fetchUserProfile(session.user.id, false);
-                    redirectByVote(profile, true);
-                  }
-                  break;
-                case 'INITIAL_SESSION':
-                  await fetchUserProfile(session.user.id, false);
-                  break;
-                default:
-                  // Para outros casos: update, token refresh, etc
-                  break;
+              
+              // Usando if/else ao invés de switch para evitar problemas de tipo
+              if (event === 'SIGNED_UP') {
+                setTimeout(async () => {
+                  const profile = await fetchUserProfile(session.user.id, false);
+                  redirectByVote(profile, true);
+                }, 2000);
+              } else if (event === 'SIGNED_IN') {
+                const profile = await fetchUserProfile(session.user.id, false);
+                redirectByVote(profile, true);
+              } else if (event === 'INITIAL_SESSION') {
+                await fetchUserProfile(session.user.id, false);
               }
+              // Para outros eventos (TOKEN_REFRESHED, USER_UPDATED, etc), não fazemos nada específico
+              
             } else {
               setUser(null);
               setUserProfile(null);
