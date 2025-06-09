@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext, useRef, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User } from '@supabase/supabase-js'; // ✅ ADICIONE AuthChangeEvent
+import { User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/supabaseClient';
 import { getSmartRedirect } from '../services/redirectService';
 
