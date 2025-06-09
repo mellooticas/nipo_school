@@ -22,7 +22,7 @@ const DASHBOARD_ROUTES = {
   admin: '/admin',               // ✅ Admin vai para dashboard completo pronto
   professor: '/professores',     // ✅ Professor vai para área de professores
   pastor: '/professores',        // ✅ Pastor usa área de professor  
-  aluno: '/dashboard'            // ✅ Aluno vai para dashboard padrão (temporário)
+  aluno: '/alunos'            // ✅ Aluno vai para dashboard padrão (temporário)
 };
 
 /**
@@ -73,19 +73,19 @@ const ROUTE_PERMISSIONS = {
     forbidden: ['/admin'],
     dashboard: '/professores'
   },
-  aluno: {
-    allowed: [
-      '/alunos',          // Área própria (quando existir)
-      '/instrumentos',    // Aprender instrumentos
-      '/modulos',         // Fazer módulos
-      '/dashboard',       // Dashboard geral
-      '/conquistas',      // Próprias conquistas
-      '/devocional',      // Conteúdo devocional
-      '/perfil'           // Próprio perfil
-    ],
-    forbidden: ['/admin', '/professores'], // Não pode acessar áreas administrativas
-    dashboard: '/dashboard'
-  }
+ aluno: {
+  allowed: [
+    '/alunos',          // Área própria (quando existir)
+    '/instrumentos',    // Aprender instrumentos
+    '/modulos',         // Fazer módulos
+    '/dashboard',       // Dashboard geral
+    '/conquistas',      // Próprias conquistas
+    '/devocional',      // Conteúdo devocional
+    '/perfil'           // Próprio perfil
+  ],
+  forbidden: ['/admin', '/professores'], // Não pode acessar áreas administrativas
+  dashboard: '/alunos'    // ✅ CORRIGIDO: Dashboard específico para alunos
+}
 };
 
 /**
@@ -300,7 +300,7 @@ export const isAdmin = (profile) => {
 };
 
 /**
- * ✅ NOVA: Função helper para verificar se é professor/pastor
+ * ✅ NOVA: Função helper para verificar se é professor/pastor 
  */
 export const isEducator = (profile) => {
   return ['professor', 'pastor'].includes(profile?.tipo_usuario);

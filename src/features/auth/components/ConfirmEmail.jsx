@@ -6,8 +6,8 @@ const ConfirmEmail = () => {
   const navigate = useNavigate();
 
   const handleGoToLogin = () => {
-    navigate('/login');
-  };
+    navigate('/login'); 
+  }; 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">

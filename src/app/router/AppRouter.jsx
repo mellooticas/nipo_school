@@ -7,7 +7,7 @@ import { hasRoutePermission } from '../../shared/services/redirectService';
 import Dashboard from '../../pages/Dashboard';
 import Login from '../../features/auth/pages/Login';
 import Register from '../../features/auth/pages/Register'; 
-import ConfirmEmail from '../../features/auth/components/ConfirmEmail';
+import VerifyEmail from '../../features/auth/pages/VerifyEmail'; // ✅ NOVO
 import Vote from '../../features/auth/pages/Vote';
 
 // Import das páginas dos alunos
@@ -28,16 +28,16 @@ import InstrumentosList from '../../features/instrumentos/pages/InstrumentosList
 import InstrumentoPagina from '../../features/instrumentos/pages/InstrumentoPagina';
 
 // Import das páginas ADMINISTRATIVAS - ✅ ATUALIZADAS
-import AdminDashboard from '../../features/admin/pages/AdminDashboard'; // ✅ Dashboard principal corrigido
+import AdminDashboard from '../../features/admin/pages/AdminDashboard';
 import AdminInstruments from '../../features/admin/pages/AdminInstruments';
 import AdminInstrumentDetails from '../../features/admin/pages/AdminInstrumentDetails';
 import Kanban from '../../features/admin/pages/Kanban';
 import AulaDetail from '../../features/admin/pages/AulaDetail';
-import AdminProfessores from '../../features/admin/pages/AdminProfessores'; // ✅ Componente corrigido
-import AdminAlunos from '../../features/admin/pages/AdminAlunos'; // ✅ Novo componente
-import AdminTeste from '../../features/admin/pages/AdminTeste'; // ✅ Página de teste
-import AdminRelatorios from '../../features/admin/pages/AdminRelatorios'; // ✅ Página de relatórios
-import AdminConfiguracoes from '../../features/admin/pages/AdminConfiguracoes'; // ✅ Página de configurações
+import AdminProfessores from '../../features/admin/pages/AdminProfessores';
+import AdminAlunos from '../../features/admin/pages/AdminAlunos';
+import AdminTeste from '../../features/admin/pages/AdminTeste';
+import AdminRelatorios from '../../features/admin/pages/AdminRelatorios';
+import AdminConfiguracoes from '../../features/admin/pages/AdminConfiguracoes';
 
 // ========================================
 // COMPONENTES DE LOADING E PROTEÇÃO
@@ -189,13 +189,25 @@ const AppRouter = () => {
         } 
       />
       
+      {/* ✅ NOVA ROTA PARA VERIFICAÇÃO DE EMAIL */}
       <Route 
-        path="/confirmacao" 
+        path="/verify-email" 
         element={
           <PublicRoute>
-            <ConfirmEmail />
+            <VerifyEmail />
           </PublicRoute>
         }
+      />
+
+      {/* ✅ ROTA ANTIGA PARA COMPATIBILIDADE */}
+      <Route 
+        path="/confirmacao" 
+        element={<Navigate to="/verify-email" replace />}
+      />
+
+      <Route 
+        path="/confirm-email" 
+        element={<Navigate to="/verify-email" replace />}
       />
 
       {/* ==========================================
@@ -237,7 +249,7 @@ const AppRouter = () => {
           🔴 ÁREA ADMINISTRATIVA - APENAS ADMIN ✅ ATUALIZADA
           ========================================== */}
       
-      {/* Dashboard Principal Admin - AGORA COM COMPONENTE CORRETO */}
+      {/* Dashboard Principal Admin */}
       <Route 
         path="/admin" 
         element={
@@ -360,7 +372,7 @@ const AppRouter = () => {
           🔴 GESTÃO DE PROFESSORES - ADMIN ✅ ATUALIZADA
           ========================================== */}
       
-      {/* Lista de Professores - AGORA COM COMPONENTE CORRIGIDO */}
+      {/* Lista de Professores */}
       <Route 
         path="/admin/professores" 
         element={
@@ -419,7 +431,7 @@ const AppRouter = () => {
           🔴 GESTÃO DE ALUNOS - ADMIN ✅ NOVA SEÇÃO
           ========================================== */}
       
-      {/* Lista de Alunos - COMPONENTE COMPLETO */}
+      {/* Lista de Alunos */}
       <Route 
         path="/admin/alunos" 
         element={
@@ -517,7 +529,7 @@ const AppRouter = () => {
           🔴 OUTRAS ÁREAS ADMIN ✅ ATUALIZADAS
           ========================================== */}
       
-      {/* Relatórios - AGORA COM COMPONENTE REAL */}
+      {/* Relatórios */}
       <Route 
         path="/admin/relatorios" 
         element={
@@ -527,7 +539,7 @@ const AppRouter = () => {
         } 
       />
 
-      {/* Configurações - AGORA COM COMPONENTE REAL */}
+      {/* Configurações */}
       <Route 
         path="/admin/configuracoes" 
         element={

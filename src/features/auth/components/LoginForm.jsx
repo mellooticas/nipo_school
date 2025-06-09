@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; 
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../shared/contexts/AuthContext';
+import { supabase } from '../../../shared/lib/supabase/supabaseClient';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -21,26 +22,189 @@ const LoginForm = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Handle form submission
+  // ===== FUNÇÃO PARA REENVIAR EMAIL DE VERIFICAÇÃO =====
+  const handleResendVerificationEmail = async (email) => {
+    try {
+      console.log('📧 Reenviando email de verificação para:', email);
+      
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      
+      if (error) {
+        console.error('❌ Erro ao reenviar:', error);
+        alert('❌ Erro ao reenviar email: ' + error.message);
+      } else {
+        console.log('✅ Email reenviado com sucesso');
+        
+        // Detectar provedor de email
+        const emailDomain = email.split('@')[1].toLowerCase();
+        const emailProviders = {
+          'gmail.com': 'https://mail.google.com',
+          'hotmail.com': 'https://outlook.live.com',
+          'outlook.com': 'https://outlook.live.com',
+          'yahoo.com': 'https://mail.yahoo.com',
+          'icloud.com': 'https://www.icloud.com/mail',
+          'uol.com.br': 'https://email.uol.com.br',
+          'bol.com.br': 'https://email.bol.uol.com.br',
+          'terra.com.br': 'https://webmail.terra.com.br'
+        };
+        
+        const emailProviderUrl = emailProviders[emailDomain];
+        
+        const successMessage = 
+          `✅ Email reenviado com sucesso!\n\n` +
+          `📧 Verifique sua caixa de entrada: ${email}\n\n` +
+          `📬 Procure por um email de: noreply@mail.app.supabase.io\n\n` +
+          `${emailProviderUrl ? '🚀 Quer abrir sua caixa de entrada agora?' : '⏰ O email pode demorar alguns minutos.'}`;
+        
+        if (emailProviderUrl) {
+          const openEmail = window.confirm(successMessage);
+          if (openEmail) {
+            window.open(emailProviderUrl, '_blank');
+          }
+        } else {
+          alert(successMessage);
+        }
+      }
+    } catch (error) {
+      console.error('💥 Erro crítico ao reenviar:', error);
+      alert('❌ Erro inesperado ao reenviar email. Tente novamente.');
+    }
+  };
+
+  // Handle form submission - VERSÃO MELHORADA
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    if (!email || !password) {
+      setError('Por favor, preencha email e senha');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log('🔑 Tentando fazer login...', { email });
+
       await login(email.trim(), password.trim());
-      // Redirecionamento será feito pelo AuthContext
+      
+      // Se chegou aqui, login foi bem-sucedido
+      console.log('✅ Login realizado com sucesso');
+      
+      // O redirecionamento é automático via AuthContext
+      
     } catch (error) {
-      console.error('Erro no login:', error);
-      setError(
-        error.message.includes('Email not confirmed')
-          ? 'Por favor, confirme seu e-mail antes de fazer login.'
-          : error.message.includes('Invalid login credentials')
-            ? 'Email ou senha incorretos'
-            : 'Erro ao fazer login. Tente novamente.'
-      );
+      console.error('❌ Erro no login:', error);
+      
+      // ===== TRATAMENTO ESPECÍFICO DE ERROS =====
+      
+      let errorMessage = 'Erro ao fazer login';
+      let errorDetails = '';
+      let showResendOption = false;
+      
+      if (error.message) {
+        const msg = error.message.toLowerCase();
+        
+        if (msg.includes('email not confirmed') || 
+            msg.includes('email_not_confirmed') ||
+            msg.includes('email is not confirmed') ||
+            msg.includes('confirm your email')) {
+          
+          // ERRO DE EMAIL NÃO CONFIRMADO
+          errorMessage = '📧 Email não verificado';
+          errorDetails = 'Você precisa confirmar seu email antes de fazer login.';
+          showResendOption = true;
+          
+        } else if (msg.includes('invalid credentials') ||
+                   msg.includes('invalid login credentials') ||
+                   msg.includes('wrong password') ||
+                   msg.includes('incorrect password')) {
+          
+          errorMessage = '🔒 Email ou senha incorretos';
+          errorDetails = 'Verifique suas credenciais e tente novamente.';
+          
+        } else if (msg.includes('too many requests') ||
+                   msg.includes('rate limit') ||
+                   msg.includes('too many attempts')) {
+          
+          errorMessage = '⏱️ Muitas tentativas';
+          errorDetails = 'Aguarde alguns minutos antes de tentar novamente.';
+          
+        } else if (msg.includes('user not found') ||
+                   msg.includes('no user found') ||
+                   msg.includes('user does not exist')) {
+          
+          errorMessage = '👤 Usuário não encontrado';
+          errorDetails = 'Este email não está cadastrado. Que tal criar uma conta?';
+          
+        } else if (msg.includes('network') ||
+                   msg.includes('connection') ||
+                   msg.includes('fetch')) {
+          
+          errorMessage = '🌐 Erro de conexão';
+          errorDetails = 'Verifique sua internet e tente novamente.';
+          
+        } else if (msg.includes('disabled') ||
+                   msg.includes('suspended') ||
+                   msg.includes('blocked')) {
+          
+          errorMessage = '🚫 Conta suspensa';
+          errorDetails = 'Entre em contato com o suporte para mais informações.';
+          
+        } else {
+          // Erro genérico
+          errorMessage = '❌ ' + error.message;
+          errorDetails = 'Se o problema persistir, contate o suporte.';
+        }
+      }
+      
+      setError(`${errorMessage}${errorDetails ? '\n' + errorDetails : ''}`);
+      
+      // ===== OPÇÃO DE REENVIO DE EMAIL =====
+      if (showResendOption) {
+        // Aguardar um pouco e mostrar opção de reenvio
+        setTimeout(() => {
+          const resend = window.confirm(
+            `📧 Email não verificado!\n\n` +
+            `Seu email (${email}) ainda não foi confirmado.\n\n` +
+            `🔄 Quer que reenviemos o email de confirmação?\n\n` +
+            `Clique OK para reenviar ou Cancelar para verificar sua caixa de entrada.`
+          );
+          
+          if (resend) {
+            handleResendVerificationEmail(email);
+          } else {
+            // Dar dicas de onde procurar
+            alert(
+              `📬 Verifique seu email!\n\n` +
+              `Procure por um email de: noreply@mail.app.supabase.io\n\n` +
+              `📂 Não esqueça de verificar:\n` +
+              `• Caixa de entrada\n` +
+              `• Spam/Lixo eletrônico\n` +
+              `• Promoções (Gmail)\n` +
+              `• Social (Gmail)\n\n` +
+              `⏰ O email pode demorar alguns minutos para chegar.`
+            );
+          }
+        }, 1000);
+      }
+      
+      // Log detalhado para debug
+      if (process.env.NODE_ENV === 'development') {
+        console.group('🔍 Debug do Erro de Login');
+        console.log('Tipo:', error.constructor.name);
+        console.log('Mensagem original:', error.message);
+        console.log('Mensagem tratada:', errorMessage);
+        console.log('Detalhes:', errorDetails);
+        console.log('Mostrar reenvio:', showResendOption);
+        console.groupEnd();
+      }
+      
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -116,11 +280,27 @@ const LoginForm = () => {
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Error Message - MELHORADO */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center">
-                <span className="mr-2">⚠️</span>
-                <span>{error}</span>
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <div className="flex items-start">
+                  <span className="mr-2 mt-0.5">⚠️</span>
+                  <div>
+                    <div className="whitespace-pre-line">{error}</div>
+                    {error.includes('Email não verificado') && (
+                      <div className="mt-3 pt-3 border-t border-red-200">
+                        <button
+                          type="button"
+                          onClick={() => handleResendVerificationEmail(email)}
+                          className="inline-flex items-center text-sm text-red-700 hover:text-red-800 font-medium"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          Reenviar email de confirmação
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

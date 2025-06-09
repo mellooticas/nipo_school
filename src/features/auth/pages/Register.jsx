@@ -123,48 +123,167 @@ const Register = () => {
     setStep(2);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  // Substitua apenas a função handleSubmit no seu Register.jsx
+
+// Substitua apenas a função handleSubmit no seu Register.jsx
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  
+  const validationError = validateStep2();
+  if (validationError) {
+    setError(validationError);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    console.log('🚀 Iniciando cadastro...', {
+      email: formData.email,
+      fullName: formData.fullName,
+      tipo_usuario: formData.tipo_usuario,
+      instrument: formData.instrument,
+      dob: formData.dob
+    });
+
+    await signup(formData.email, formData.password, {
+      fullName: formData.fullName,
+      dob: formData.dob,
+      instrument: formData.instrument,
+      tipo_usuario: formData.tipo_usuario
+    });
+
+    // ===== NOVA EXPERIÊNCIA DE SUCESSO =====
     
-    const error = validateStep2();
-    if (error) {
-      setError(error);
-      return;
-    }
+    // Mensagem personalizada baseada no tipo de usuário
+    const userType = userTypes.find(type => type.value === formData.tipo_usuario);
+    const welcomeMessage = formData.tipo_usuario === 'aluno' 
+      ? 'Bem-vindo à sua jornada musical!' 
+      : `Bem-vindo à equipe como ${userType?.label}!`;
 
-    setLoading(true);
+    // Detectar provedor de email para link direto
+    const emailDomain = formData.email.split('@')[1].toLowerCase();
+    const emailProviders = {
+      'gmail.com': 'https://mail.google.com',
+      'hotmail.com': 'https://outlook.live.com',
+      'outlook.com': 'https://outlook.live.com',
+      'yahoo.com': 'https://mail.yahoo.com',
+      'icloud.com': 'https://www.icloud.com/mail',
+      'uol.com.br': 'https://email.uol.com.br',
+      'bol.com.br': 'https://email.bol.uol.com.br',
+      'terra.com.br': 'https://webmail.terra.com.br'
+    };
 
-    try {
-      await signup(formData.email, formData.password, {
-        fullName: formData.fullName,
-        dob: formData.dob,
-        instrument: formData.instrument,
-        tipo_usuario: formData.tipo_usuario // Incluir tipo de usuário
+    const emailProviderUrl = emailProviders[emailDomain];
+
+    // Modal de sucesso mais amigável
+    const modalContent = `
+🎉 ${welcomeMessage}
+
+✅ Sua conta foi criada com sucesso!
+
+📧 IMPORTANTE: Verifique seu email
+Enviamos um link de confirmação para:
+${formData.email}
+
+🔍 Não encontrou o email?
+• Verifique sua caixa de spam/lixo eletrônico
+• Aguarde alguns minutos (pode demorar)
+• O email vem de noreply@mail.app.supabase.io
+
+${emailProviderUrl ? '🚀 Clique em "Ir para Email" para abrir sua caixa de entrada!' : ''}
+
+---
+
+📱 App em Japonês:
+アカウントが作成されました！
+メールを確認してアカウントを認証してください。
+    `;
+
+    // Mostrar modal customizado
+    if (window.confirm(modalContent + '\n\nClique OK para continuar...')) {
+      // Se há provedor conhecido, perguntar se quer abrir
+      if (emailProviderUrl) {
+        const openEmail = window.confirm(
+          `🚀 Quer abrir sua caixa de entrada agora?\n\n` +
+          `Vamos abrir ${emailDomain} em uma nova aba para você verificar o email.`
+        );
+        
+        if (openEmail) {
+          window.open(emailProviderUrl, '_blank');
+        }
+      }
+      
+      // Redirecionar para página de aguardo/instrução
+      navigate('/verify-email', { 
+        state: { 
+          email: formData.email,
+          userType: formData.tipo_usuario,
+          emailProvider: emailProviderUrl 
+        } 
       });
-
-      // Mensagem personalizada baseada no tipo de usuário
-      const userType = userTypes.find(type => type.value === formData.tipo_usuario);
-      const welcomeMessage = formData.tipo_usuario === 'aluno' 
-        ? 'Bem-vindo à sua jornada musical!' 
-        : `Bem-vindo à equipe como ${userType?.label}!`;
-
-      alert(
-        `✅ Cadastro realizado com sucesso!\n\n${welcomeMessage}\n\nPor favor, verifique seu e-mail para confirmar sua conta antes de fazer login.\n\n---\n\n登録が完了しました！\nログインする前に、メールを確認してアカウントを認証してください。`
-      );
-
-      navigate('/vote');
-    } catch (error) {
-      console.error('Erro no cadastro:', error);
-      setError(
-        error.message.includes('User already registered')
-          ? 'Este email já está cadastrado. Tente fazer login.'
-          : 'Erro ao criar conta. Tente novamente.'
-      );
-    } finally {
-      setLoading(false);
     }
-  };
+    
+  } catch (error) {
+    console.error('❌ Erro no cadastro:', error);
+    
+    // ===== TRATAMENTO DE ERRO MELHORADO =====
+    
+    let errorMessage = 'Erro ao criar conta. Tente novamente.';
+    let errorDetails = '';
+    
+    if (error.message) {
+      if (error.message.includes('User already registered') || 
+          error.message.includes('já está cadastrado')) {
+        errorMessage = '📧 Este email já está cadastrado';
+        errorDetails = 'Tente fazer login ou use "Esqueci minha senha" se não lembrar da senha.';
+      } else if (error.message.includes('Invalid email')) {
+        errorMessage = '📧 Email inválido';
+        errorDetails = 'Verifique se digitou o email corretamente.';
+      } else if (error.message.includes('Password should be at least')) {
+        errorMessage = '🔒 Senha muito fraca';
+        errorDetails = 'A senha deve ter pelo menos 6 caracteres.';
+      } else if (error.message.includes('Database error') || 
+                 error.message.includes('Dados obrigatórios')) {
+        errorMessage = '🗃️ Erro nos dados informados';
+        errorDetails = 'Verifique se todos os campos estão preenchidos corretamente.';
+      } else if (error.message.includes('Network')) {
+        errorMessage = '🌐 Erro de conexão';
+        errorDetails = 'Verifique sua internet e tente novamente.';
+      } else if (error.message.includes('rate limit')) {
+        errorMessage = '⏱️ Muitas tentativas';
+        errorDetails = 'Aguarde alguns minutos antes de tentar novamente.';
+      } else {
+        // Mostrar erro específico em desenvolvimento
+        errorMessage = '❌ ' + error.message;
+        errorDetails = 'Se o problema persistir, contate o suporte.';
+      }
+    }
+    
+    setError(`${errorMessage}${errorDetails ? '\n' + errorDetails : ''}`);
+    
+    // Log detalhado para debug
+    if (process.env.NODE_ENV === 'development') {
+      console.group('🔍 Debug do Erro de Cadastro');
+      console.log('Tipo:', error.constructor.name);
+      console.log('Mensagem:', error.message);
+      console.log('Stack:', error.stack);
+      console.log('Dados enviados:', {
+        email: formData.email,
+        fullName: formData.fullName,
+        tipo_usuario: formData.tipo_usuario,
+        instrument: formData.instrument,
+        dob: formData.dob
+      });
+      console.groupEnd();
+    }
+    
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getColorClasses = (color, selected = false) => {
     const colors = {
@@ -303,11 +422,30 @@ const Register = () => {
               </div>
 
               {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
+              // Substitua apenas a seção do Error Message (linha 466) no seu Register.jsx
+
+{/* Error Message - VERSÃO MELHORADA */}
+{error && (
+  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+    <div className="flex items-start">
+      <span className="mr-2 mt-0.5">⚠️</span>
+      <div className="flex-1">
+        <div className="whitespace-pre-line">{error}</div>
+        {error.includes('já está cadastrado') && (
+          <div className="mt-3 pt-3 border-t border-red-200">
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center text-sm text-red-700 hover:text-red-800 font-medium"
+            >
+              Ir para Login →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
               {/* Next Button */}
               <button
@@ -506,6 +644,6 @@ const Register = () => {
       </div>
     </div>
   );
-};
+}; 
 
 export default Register;

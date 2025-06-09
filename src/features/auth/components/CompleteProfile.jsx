@@ -453,7 +453,7 @@ const CompleteProfile = () => {
             </div>
           </div>
         )}
-      </div>
+      </div> 
     </div>
   );
 };

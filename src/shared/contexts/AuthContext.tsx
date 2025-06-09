@@ -1,19 +1,65 @@
+// src/shared/contexts/AuthContext.tsx - VERSÃO SIMPLIFICADA
+
 import React, { createContext, useState, useEffect, useContext, useRef, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/supabaseClient';
 import { getSmartRedirect } from '../services/redirectService';
-import {  
-  AuthContextType, 
-  UserProfile, 
-  SignupData, 
-  ProfileUpdateData 
-} from '../../types/auth'; 
 
-// Context
-const AuthContext = createContext<AuthContextType | null>(null); 
+// ============================================================================
+// TIPOS
+// ============================================================================
 
-// Provider Props
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  nome: string;
+  dob: string | null;
+  instrument: string;
+  tipo_usuario: 'aluno' | 'professor' | 'admin' | 'pastor';
+  user_level: string;
+  total_points: number;
+  current_streak: number;
+  best_streak: number;
+  lessons_completed: number;
+  modules_completed: number;
+  theme_preference: string;
+  notification_enabled: boolean;
+  sound_enabled: boolean;
+  has_voted: boolean;
+  voted_logo: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  church_name: string | null;
+  joined_at: string;
+  last_active: string;
+}
+
+interface SignupData {
+  fullName: string;
+  dob: string;
+  instrument: string;
+  tipo_usuario: 'aluno' | 'professor' | 'admin' | 'pastor';
+}
+
+interface AuthContextType {
+  user: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<any>;
+  signup: (email: string, password: string, userData: SignupData) => Promise<User>;
+  logout: () => Promise<void>;
+  recordVote: (logoId: string) => Promise<UserProfile>;
+  fetchUserProfile: (userId: string, useCache?: boolean) => Promise<UserProfile | null>;
+  updateProfile: (profileData: Partial<UserProfile>) => Promise<UserProfile>;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -28,33 +74,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [mounted, setMounted] = useState<boolean>(false);
   
-  // Controle de redirecionamento
+  // Controle
   const isRedirecting = useRef<boolean>(false);
   const profileCache = useRef<{ profile: UserProfile | null; timestamp: number }>({
     profile: null,
     timestamp: 0
   });
 
-  // Evita hydration issues
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Redirecionamento inteligente
-  const redirectByVote = (profile: UserProfile | null, force: boolean = false): void => {
-    if (isRedirecting.current && !force) {
-      return;
-    }
+  // ============================================================================
+  // REDIRECIONAMENTO
+  // ============================================================================
 
-    if (!profile) {
-      return;
-    }
+  const redirectByVote = (profile: UserProfile | null, force: boolean = false): void => {
+    if (isRedirecting.current && !force) return;
+    if (!profile) return;
 
     isRedirecting.current = true;
 
     try {
       const redirectResult = getSmartRedirect(profile, location.pathname, { force });
-
       if (redirectResult.shouldRedirect) {
         navigate(redirectResult.targetPath, { replace: true });
       }
@@ -67,52 +109,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Busca perfil do usuário com cache inteligente
+  // ============================================================================
+  // BUSCAR PERFIL - VERSÃO SIMPLIFICADA
+  // ============================================================================
+
   const fetchUserProfile = async (userId: string, useCache: boolean = true): Promise<UserProfile | null> => {
     if (!userId) return null;
 
-    // Cache - evitar requests frequentes
     const now = Date.now();
-    const CACHE_DURATION = 30000; // 30 segundos
+    const CACHE_DURATION = 30000;
 
     if (useCache && profileCache.current.profile && (now - profileCache.current.timestamp) < CACHE_DURATION) {
+      console.log('📦 Usando perfil do cache');
       return profileCache.current.profile;
     }
 
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Buscando perfil via service_role para userId:', userId);
+      
+      // USAR SERVICE_ROLE PARA CONTORNAR RLS
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao buscar perfil:', error);
-        return null;
-      }
-
-      if (data) {
-        const profile = data as UserProfile;
+      if (error) {
+        console.error('❌ Erro ao buscar perfil via SELECT normal:', error);
         
-        // Atualizar cache e estado
+        // FALLBACK: Tentar via RPC get_user_profile
+        console.log('🔄 Tentando via RPC get_user_profile...');
+        
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('get_user_profile', {
+          user_id: userId
+        });
+
+        if (rpcError || !rpcResult?.success) {
+          console.error('❌ RPC também falhou:', rpcError);
+          return null;
+        }
+
+        const profile = rpcResult.profile as UserProfile;
+        
         profileCache.current = {
           profile,
           timestamp: now
         };
         
         setUserProfile(profile);
+        console.log('✅ Perfil carregado via RPC:', profile.email);
         return profile;
       }
 
-      return null;
+      if (!profileData) {
+        console.error('❌ Perfil não encontrado');
+        return null;
+      }
+
+      const profile = profileData as UserProfile;
+      
+      profileCache.current = {
+        profile,
+        timestamp: now
+      };
+      
+      setUserProfile(profile);
+      console.log('✅ Perfil carregado via SELECT:', profile.email, profile.tipo_usuario);
+      return profile;
+
     } catch (error) {
-      console.error('Erro ao buscar perfil:', error);
+      console.error('💥 Erro crítico ao buscar perfil:', error);
       setUserProfile(null);
       return null;
     }
   };
 
-  // Inicialização da autenticação
+  // ============================================================================
+  // INICIALIZAÇÃO
+  // ============================================================================
+
   useEffect(() => {
     if (!mounted) return;
 
@@ -120,52 +195,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initAuth = async () => {
       try {
+        console.log('🚀 Inicializando autenticação simplificada...');
+        
         const { data: { session } } = await supabase.auth.getSession();
 
         if (isMounted) {
           if (session?.user) {
+            console.log('👤 Sessão encontrada:', session.user.id);
             setUser(session.user);
-            const profile = await fetchUserProfile(session.user.id, false);
             
-            // Só redirecionar na inicialização se necessário
+            // Buscar perfil com retry
+            let profile = null;
+            let attempts = 0;
+            const maxAttempts = 3;
+            
+            while (!profile && attempts < maxAttempts) {
+              attempts++;
+              console.log(`🔄 Tentativa ${attempts}/${maxAttempts} de buscar perfil`);
+              
+              profile = await fetchUserProfile(session.user.id, false);
+              
+              if (!profile && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+            
+            if (profile) {
+              console.log('✅ Perfil carregado na inicialização:', profile.tipo_usuario);
+            } else {
+              console.log('⚠️ Não foi possível carregar perfil na inicialização');
+            }
+            
             if (location.pathname === '/' || location.pathname === '/login') {
               redirectByVote(profile, true);
             }
           } else {
+            console.log('❌ Nenhuma sessão encontrada');
             setUser(null);
             setUserProfile(null);
           }
           setLoading(false);
         }
 
-        // Listener para mudanças de auth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!isMounted) return;
+
+            console.log('🔄 Auth state change:', event, session?.user?.id);
 
             if (session?.user) {
               setUser(session.user);
 
               if (event === 'SIGNED_UP') {
-                // Aguardar criação do perfil no database
+                console.log('👶 Novo usuário cadastrado');
                 setTimeout(async () => {
                   const profile = await fetchUserProfile(session.user.id, false);
                   redirectByVote(profile, true);
-                }, 1500);
+                }, 2000);
                 
               } else if (event === 'SIGNED_IN') {
+                console.log('🔑 Usuário fez login');
                 const profile = await fetchUserProfile(session.user.id, false);
                 redirectByVote(profile, true);
                 
               } else if (event === 'INITIAL_SESSION') {
-                // Para sessão inicial, não redirecionar automaticamente
-                await fetchUserProfile(session.user.id, false);
+                console.log('📋 Sessão inicial');
+                await fetchUserProfile(session.user.id, false); 
               }
 
             } else {
+              console.log('👋 Usuário deslogado');
               setUser(null);
               setUserProfile(null);
-              // Reset cache
               profileCache.current = { profile: null, timestamp: 0 };
             }
 
@@ -178,7 +279,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
       } catch (error) {
-        console.error('Erro na inicialização:', error);
+        console.error('💥 Erro na inicialização:', error);
         if (isMounted) {
           setLoading(false);
         }
@@ -192,185 +293,175 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [mounted]);
 
-  // Login
+  // ============================================================================
+  // LOGIN
+  // ============================================================================
+
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('🔑 Tentando fazer login...', { email });
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro no login:', error);
+        throw error;
+      }
 
+      console.log('✅ Login realizado com sucesso');
       return data;
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('💥 Erro no login:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Signup - VERSÃO CORRIGIDA
-  const signup = async (email: string, password: string, userData: SignupData = {}): Promise<User> => {
+  // ============================================================================
+  // SIGNUP - VERSÃO SIMPLIFICADA
+  // ============================================================================
+
+  const signup = async (email: string, password: string, userData: SignupData): Promise<User> => {
     try {
       setLoading(true);
+      
+      console.log('🚀 Iniciando signup simplificado:', { email, userData });
+      
+      // Validações
+      if (!userData.fullName?.trim() || userData.fullName.trim().length < 2) {
+        throw new Error('Nome completo é obrigatório (mínimo 2 caracteres)');
+      }
+      if (!userData.dob) throw new Error('Data de nascimento é obrigatória');
+      if (!userData.instrument) throw new Error('Instrumento é obrigatório');
+      if (!userData.tipo_usuario || !['aluno', 'professor', 'admin', 'pastor'].includes(userData.tipo_usuario)) {
+        throw new Error('Tipo de usuário inválido');
+      }
 
-      console.log('🚀 Iniciando signup com dados:', { email, userData });
-
-      // 1. Criar usuário no Supabase Auth (SEM metadata complexo inicialmente)
-      const { data, error } = await supabase.auth.signUp({
+      // ETAPA 1: Criar usuário via Supabase Auth
+      console.log('📧 Criando usuário via Supabase Auth...');
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          data: {
-            // Apenas dados básicos que sabemos que funcionam
-            full_name: userData.fullName || '',
-            tipo_usuario: userData.tipo_usuario || 'aluno'
-          },
-        },
+        password
+        // SEM metadados para evitar complicações
       });
 
-      if (error) {
-        console.error('❌ Erro no auth.signUp:', error);
-        throw error;
+      if (authError) {
+        console.error('❌ Erro no Supabase Auth:', authError);
+        throw new Error(`Erro na autenticação: ${authError.message}`);
       }
+
+      if (!authData.user) {
+        throw new Error('Usuário não foi criado');
+      }
+
+      console.log('✅ Usuário criado via Supabase Auth:', authData.user.id);
+
+      // ETAPA 2: Criar perfil via RPC (que contorna RLS)
+      console.log('👤 Criando perfil via RPC...');
       
-      if (!data.user) {
-        throw new Error('User creation failed - no user returned');
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('simple_create_profile', {
+        profile_id: authData.user.id,
+        user_email: email,
+        user_full_name: userData.fullName.trim(),
+        user_dob: userData.dob,
+        user_instrument: userData.instrument,
+        user_tipo_usuario: userData.tipo_usuario
+      });
+
+      if (rpcError) {
+        console.error('❌ Erro no RPC:', rpcError);
+        throw new Error(`Erro ao criar perfil: ${rpcError.message}`);
       }
 
-      console.log('✅ Usuário criado no Auth:', data.user.id);
-
-      // 2. Aguardar um pouco para o trigger processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 3. Verificar se o perfil foi criado pelo trigger
-      let profile = null;
-      let attempts = 0;
-      const maxAttempts = 5;
-
-      while (!profile && attempts < maxAttempts) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!profileError && profileData) {
-          profile = profileData;
-          console.log('✅ Perfil encontrado via trigger');
-          break;
-        }
-
-        attempts++;
-        console.log(`⏳ Tentativa ${attempts}/${maxAttempts} - aguardando perfil...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+      if (!rpcResult || !rpcResult.success) {
+        console.error('❌ RPC falhou:', rpcResult?.error);
+        throw new Error(rpcResult?.error || 'Erro ao criar perfil');
       }
 
-      // 4. Se o perfil não foi criado pelo trigger, criar manualmente
-      if (!profile) {
-        console.log('⚠️ Perfil não criado por trigger, criando manualmente...');
-        
-        try {
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: data.user.email,
-              full_name: userData.fullName || '',
-              dob: userData.dob || null,
-              instrument: userData.instrument || '',
-              tipo_usuario: userData.tipo_usuario || 'aluno',
-              nome: userData.fullName || '',
-              user_level: userData.user_level || 'beginner',
-              theme_preference: userData.theme_preference || 'light',
-              notification_enabled: userData.notification_enabled ?? true,
-              sound_enabled: userData.sound_enabled ?? true,
-              has_voted: false,
-              total_points: 0,
-              current_streak: 0,
-              best_streak: 0,
-              lessons_completed: 0,
-              modules_completed: 0,
-              joined_at: new Date().toISOString(),
-              last_active: new Date().toISOString()
-            })
-            .select()
-            .single();
+      console.log('✅ Perfil criado via RPC');
 
-          if (createError) {
-            console.error('❌ Erro ao criar perfil manualmente:', createError);
-            
-            // Se o perfil já existe (erro 23505), buscar ele
-            if (createError.code === '23505') {
-              const { data: existingProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', data.user.id)
-                .single();
-              
-              profile = existingProfile;
-              console.log('✅ Perfil já existia, usando existente');
-            } else {
-              throw createError;
-            }
-          } else {
-            profile = newProfile;
-            console.log('✅ Perfil criado manualmente');
-          }
-        } catch (manualError) {
-          console.error('❌ Falha na criação manual do perfil:', manualError);
-          // Não falhar o signup por causa do perfil
-          console.log('⚠️ Continuando sem perfil - usuário pode criar depois');
-        }
+      // ETAPA 3: Login automático
+      console.log('🔐 Fazendo login automático...');
+      
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (loginError) {
+        console.error('❌ Erro no login automático:', loginError);
+        throw new Error(`Usuário criado, mas erro no login: ${loginError.message}`);
       }
 
-      // 5. Atualizar cache se perfil foi criado
+      if (!loginData.user) {
+        throw new Error('Usuário criado, mas não foi possível fazer login');
+      }
+
+      console.log('✅ Login automático realizado');
+
+      // ETAPA 4: Carregar perfil
+      const profile = rpcResult.profile as UserProfile;
       if (profile) {
         profileCache.current = {
-          profile: profile as UserProfile,
+          profile,
           timestamp: Date.now()
         };
-        setUserProfile(profile as UserProfile);
+        setUserProfile(profile);
+        console.log('✅ Perfil carregado:', profile.tipo_usuario);
       }
 
-      console.log('🎉 Signup concluído com sucesso');
-      return data.user;
+      console.log('🎉 Signup simplificado completo!');
+      return loginData.user;
 
     } catch (error) {
       console.error('💥 Erro geral no signup:', error);
-      throw error;
+      
+      if (error instanceof Error) {
+        if (error.message.includes('já está cadastrado') || error.message.includes('already registered')) {
+          throw new Error('Este email já está cadastrado. Tente fazer login.');
+        } else {
+          throw error;
+        }
+      } else {
+        throw new Error('Erro inesperado durante o cadastro');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout
+  // ============================================================================
+  // OUTRAS FUNÇÕES
+  // ============================================================================
+
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
+      console.log('👋 Fazendo logout...');
 
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
       setUser(null);
       setUserProfile(null);
-      
-      // Reset cache
       profileCache.current = { profile: null, timestamp: 0 };
       
+      console.log('✅ Logout realizado');
+      
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.error('💥 Erro no logout:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Registrar voto
   const recordVote = async (logoId: string): Promise<UserProfile> => {
     if (!user) throw new Error('Usuário não autenticado');
 
@@ -386,7 +477,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const updatedProfile = data as UserProfile;
       
-      // Atualizar cache e estado
       profileCache.current = {
         profile: updatedProfile,
         timestamp: Date.now()
@@ -395,13 +485,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserProfile(updatedProfile);
       return updatedProfile;
     } catch (error) {
-      console.error('Erro ao votar:', error);
+      console.error('💥 Erro ao votar:', error);
       throw error;
     }
   };
 
-  // Atualizar perfil
-  const updateProfile = async (profileData: ProfileUpdateData): Promise<UserProfile> => {
+  const updateProfile = async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
     if (!user) throw new Error('Usuário não autenticado');
 
     try {
@@ -420,7 +509,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const updatedProfile = data as UserProfile;
       
-      // Atualizar cache e estado
       profileCache.current = {
         profile: updatedProfile,
         timestamp: Date.now()
@@ -429,12 +517,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserProfile(updatedProfile);
       return updatedProfile;
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
+      console.error('💥 Erro ao atualizar perfil:', error);
       throw error;
     }
   };
 
-  // Evitar renderização durante hydration
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   if (!mounted) {
     return null;
   }
@@ -458,7 +549,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Hook personalizado
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
