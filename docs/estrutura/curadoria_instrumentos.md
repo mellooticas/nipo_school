@@ -168,3 +168,30 @@ Ser incluído no repositório como documento padrão para curadoria.
 Servir como base para gerar SQL automático.
 
 Ser usado como template para novos instrumentos no painel/admin.
+
+
+| id                                   | nome                 |
+| ------------------------------------ | -------------------- |
+| 35aff373-706c-47d8-8004-d8edcddb1e0c | Baixo                |
+| 86f83611-c0db-470c-87e7-31ee81b1a009 | Bateria              |
+| 87ee66bf-bb70-4e70-9aa3-4bff514ced4e | Canto                |
+| d7c80fe1-ab43-4920-b2aa-d9b4f3ace166 | Clarinete            |
+| b73f1d80-3d73-487e-89b8-ab35274a8dd4 | Contrabaixo Acústico |
+| 8fbba87d-39e1-4542-b8bb-7c815fdc2b9a | Eufônio              |
+| 36b9d36d-f65b-4ba1-89be-4ab3707e874c | Fagote               |
+| 794f42a6-619a-4ca3-8f1b-c3ac7a9e7a08 | Flauta               |
+| df49fd27-9bcd-4462-a0f8-b36f0ff9f97f | Guitarra             |
+| 9b42a23b-ac7f-42e1-8a04-bde4c525fbde | Oboé                 |
+| 64b94e98-6ad2-4e7f-9aa0-b57f6bb58df1 | Outro                |
+| 9a5e0eac-114e-4173-90af-32b55c870675 | Percussão Erudita    |
+| ab9720a5-1973-484e-9a44-d4aa62594336 | Piano                |
+| 26cadf44-6d7b-4f9b-85d6-6b2c40715f45 | Saxofone             |
+| 8bd473f1-7b35-4b9e-869a-17fb73c6e047 | Teclado              |
+| cca87ab1-8ad4-4876-a8d8-190f85927952 | Teoria Musical       |
+| 850c53c4-2ed6-4a12-a4ff-3fbaecd6bf73 | Trombone             |
+| 509d6a26-159a-4976-aa46-83f914f930aa | Trompete             |
+| 174f6ed4-3c21-444a-acfa-5149f53f2ca0 | Tuba                 |
+| 9edff4db-9ef5-43fc-970a-7d2086de223b | Viola Clássica       |
+| 750450cf-e14e-4f02-944e-b3c1bb0f87a4 | Violão               |
+| 80436b4f-15c1-452f-9442-34e42b5117e4 | Violino              |
+| 412c40b6-f4fc-4379-9d6f-5ce0ec2d669d | Violoncelo           |
