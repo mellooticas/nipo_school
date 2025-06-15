@@ -7,11 +7,12 @@ import { hasRoutePermission } from '../../shared/services/redirectService';
 import Dashboard from '../../pages/Dashboard';
 import Login from '../../features/auth/pages/Login';
 import Register from '../../features/auth/pages/Register'; 
-import VerifyEmail from '../../features/auth/pages/VerifyEmail'; // ✅ NOVO
+import VerifyEmail from '../../features/auth/pages/VerifyEmail';
 import Vote from '../../features/auth/pages/Vote';
 
 // Import das páginas dos alunos
 import AlunoDashboardPage from '../../features/alunos/pages/AlunoDashboard';
+import MeuInstrumento from '../../features/alunos/pages/MeuInstrumento'; // 🚀 NOVO
 
 // Import das páginas dos professores - MÓDULO COMPLETO
 import ProfessoresLayout from '../../features/professores/pages/ProfessoresLayout';
@@ -38,6 +39,12 @@ import AdminAlunos from '../../features/admin/pages/AdminAlunos';
 import AdminTeste from '../../features/admin/pages/AdminTeste';
 import AdminRelatorios from '../../features/admin/pages/AdminRelatorios';
 import AdminConfiguracoes from '../../features/admin/pages/AdminConfiguracoes';
+
+// 🚀 IMPORTS DO SISTEMA QR CODE
+import { QRCodeManager } from '../../features/admin/pages/QRCodeManager';
+import { QRDisplay } from '../../features/admin/pages/QRDisplay';
+import { QRScannerPage } from '../../features/alunos/pages/QRScannerPage';
+import { QRScanner } from '../../features/alunos/components/QRScanner';
 
 // ========================================
 // COMPONENTES DE LOADING E PROTEÇÃO
@@ -204,7 +211,7 @@ const AppRouter = () => {
         path="/confirmacao" 
         element={<Navigate to="/verify-email" replace />}
       />
-
+      
       <Route 
         path="/confirm-email" 
         element={<Navigate to="/verify-email" replace />}
@@ -240,6 +247,64 @@ const AppRouter = () => {
                 <h1 className="text-2xl font-bold text-gray-800 mb-4">👤 Perfil</h1>
                 <p className="text-gray-600">Em desenvolvimento...</p>
               </div>
+            </div>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ==========================================
+          🚀 SISTEMA QR CODE - NOVAS ROTAS
+          ========================================== */}
+      
+      {/* 🔴 ADMIN: Gerenciar QR Codes */}
+      <Route 
+        path="/admin/qr-manager" 
+        element={
+          <AdminRoute>
+            <QRCodeManager />
+          </AdminRoute>
+        } 
+      />
+
+      {/* 🔴 ADMIN: Exibição QR para Projetor (tela cheia) */}
+      <Route 
+        path="/admin/qr-display/:aulaId" 
+        element={
+          <AdminRoute>
+            <QRDisplay />
+          </AdminRoute>
+        } 
+      />
+
+      {/* 📱 ALUNOS: Scanner QR Code (página completa) */}
+      <Route 
+        path="/scanner" 
+        element={
+          <ProtectedRoute>
+            <QRScannerPage />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* 📱 SCANNER PÚBLICO (sem autenticação para testes) */}
+      <Route 
+        path="/scanner-publico" 
+        element={
+          <div className="min-h-screen bg-gray-50 p-4">
+            <div className="max-w-md mx-auto">
+              <QRScanner />
+            </div>
+          </div>
+        } 
+      />
+
+      {/* 📱 SCANNER RÁPIDO (modal/popup) */}
+      <Route 
+        path="/scanner-rapido" 
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+              <QRScanner onClose={() => window.history.back()} />
             </div>
           </ProtectedRoute>
         } 
@@ -323,51 +388,6 @@ const AppRouter = () => {
         } 
       />
 
-      {/* Material Didático */}
-      <Route 
-        path="/admin/aulas/material/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">📎 Material Didático</h1>
-                <p className="text-gray-600">Gerenciar materiais - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Controle de Presença */}
-      <Route 
-        path="/admin/aulas/presenca/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">✅ Controle de Presença</h1>
-                <p className="text-gray-600">Lista de presença - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Avaliações da Aula */}
-      <Route 
-        path="/admin/aulas/avaliacoes/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">⭐ Avaliações da Aula</h1>
-                <p className="text-gray-600">Feedback dos alunos - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
       {/* ==========================================
           🔴 GESTÃO DE PROFESSORES - ADMIN ✅ ATUALIZADA
           ========================================== */}
@@ -397,36 +417,6 @@ const AppRouter = () => {
         } 
       />
 
-      {/* Editar Professor */}
-      <Route 
-        path="/admin/professores/editar/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">✏️ Editar Professor</h1>
-                <p className="text-gray-600">Formulário de edição - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Criar Novo Professor */}
-      <Route 
-        path="/admin/professores/novo" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">➕ Novo Professor</h1>
-                <p className="text-gray-600">Formulário de cadastro - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
       {/* ==========================================
           🔴 GESTÃO DE ALUNOS - ADMIN ✅ NOVA SEÇÃO
           ========================================== */}
@@ -450,51 +440,6 @@ const AppRouter = () => {
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-gray-800 mb-4">👨‍🎓 Detalhes do Aluno</h1>
                 <p className="text-gray-600">Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Editar Aluno */}
-      <Route 
-        path="/admin/alunos/editar/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">✏️ Editar Aluno</h1>
-                <p className="text-gray-600">Formulário de edição - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Ver Progresso do Aluno */}
-      <Route 
-        path="/admin/alunos/progresso/:id" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">📈 Progresso do Aluno</h1>
-                <p className="text-gray-600">Acompanhamento detalhado - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Criar Novo Aluno */}
-      <Route 
-        path="/admin/alunos/novo" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">➕ Novo Aluno</h1>
-                <p className="text-gray-600">Formulário de cadastro - Em desenvolvimento...</p>
               </div>
             </div>
           </AdminRoute>
@@ -549,39 +494,11 @@ const AppRouter = () => {
         } 
       />
 
-      {/* Logs - EM DESENVOLVIMENTO */}
-      <Route 
-        path="/admin/logs" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">📋 Logs do Sistema</h1>
-                <p className="text-gray-600">Auditoria e logs - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
-      {/* Backup - EM DESENVOLVIMENTO */}
-      <Route 
-        path="/admin/backup" 
-        element={
-          <AdminRoute>
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">💾 Backup e Recuperação</h1>
-                <p className="text-gray-600">Sistema de backup - Em desenvolvimento...</p>
-              </div>
-            </div>
-          </AdminRoute>
-        } 
-      />
-
       {/* ==========================================
-          🔵 ÁREA DOS ALUNOS - TODOS PODEM ACESSAR
+          🔵 ÁREA DOS ALUNOS - TODOS PODEM ACESSAR ✅ ATUALIZADA
           ========================================== */}
+      
+      {/* Dashboard Principal dos Alunos */}
       <Route 
         path="/alunos" 
         element={
@@ -596,6 +513,68 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <AlunoDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🚀 NOVA: Página do Instrumento do Aluno */}
+      <Route 
+        path="/alunos/meu-instrumento" 
+        element={
+          <ProtectedRoute>
+            <MeuInstrumento />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🚀 FUTURAS PÁGINAS DE ALUNOS */}
+      <Route 
+        path="/alunos/progresso" 
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">📈 Meu Progresso</h1>
+                <p className="text-gray-600">Acompanhe sua evolução - Em desenvolvimento...</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route 
+        path="/alunos/aulas" 
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">📚 Minhas Aulas</h1>
+                <p className="text-gray-600">Próximas aulas e histórico - Em desenvolvimento...</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route 
+        path="/alunos/conquistas" 
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">🏆 Minhas Conquistas</h1>
+                <p className="text-gray-600">Badges e realizações - Em desenvolvimento...</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route 
+        path="/alunos/scanner" 
+        element={
+          <ProtectedRoute>
+            <QRScannerPage />
           </ProtectedRoute>
         }
       />
@@ -733,7 +712,7 @@ const AppRouter = () => {
             </div>
           </div>
         }  
-      />
+      /> 
     </Routes>
   );
 };

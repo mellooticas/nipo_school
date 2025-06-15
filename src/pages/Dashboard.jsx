@@ -64,7 +64,7 @@ const Dashboard = () => {
           description: 'Explore instrumentos, faça módulos e acompanhe seu progresso.',
           actions: [
             { label: 'Meus Estudos', path: '/alunos', color: 'bg-blue-600 hover:bg-blue-700' },
-            { label: 'Instrumentos', path: '/instrumentos', color: 'bg-green-600 hover:bg-green-700' },
+            { label: 'Instrumentos', path: '/alunos/meu-instrumento', color: 'bg-green-600 hover:bg-green-700' },
             { label: 'Módulos', path: '/modulos', color: 'bg-purple-600 hover:bg-purple-700' }
           ]
         };
@@ -152,7 +152,7 @@ const Dashboard = () => {
           <div className="border-t pt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <button
-                onClick={() => navigate('/instrumentos')}
+                onClick={() => navigate('/alunos/meu-instrumento')}
                 className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <span className="text-2xl mb-2">🎵</span>
@@ -220,4 +220,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Dashboard; 

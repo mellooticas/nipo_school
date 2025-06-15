@@ -34,11 +34,13 @@ import {
   Filter,
   Search,
   MoreHorizontal,
-  QrCode  // 🚀 ADICIONAR ESTA LINHA
+  QrCode,
+  LogOut  // 🚀 ADICIONADO PARA LOGOUT
 } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { user, userProfile } = useAuth();
+  // 🚀 ADICIONADO LOGOUT AO useAuth
+  const { user, userProfile, logout } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,155 +58,168 @@ const AdminDashboard = () => {
   const [visualizacaoAtiva, setVisualizacaoAtiva] = useState('geral');
   const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ VERSÃO CORRIGIDA - Usando apenas a tabela profiles
-const carregarDadosReais = useCallback(async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    console.log('🔄 Carregando dados reais do dashboard...');
-
-    // Buscar todos os dados da tabela profiles (que já tem tudo organizado)
-    const { data: allProfiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('last_active', { ascending: false });
-
-    if (profilesError) {
-      console.error('Erro ao buscar profiles:', profilesError);
-      throw new Error(`Erro ao carregar usuários: ${profilesError.message}`);
+  // 🚀 FUNÇÃO DE LOGOUT ADICIONADA
+  const handleLogout = async () => {
+    if (window.confirm('Tem certeza que deseja sair da conta de administrador?')) {
+      try {
+        await logout();
+        navigate('/login', { replace: true });
+      } catch (err) {
+        console.error('Erro ao fazer logout:', err);
+        alert('Erro ao sair da conta: ' + err.message);
+      }
     }
+  };
 
-    console.log('📊 Dados brutos recebidos:', {
-      total_profiles: allProfiles?.length || 0,
-      tipos: allProfiles?.reduce((acc, p) => {
-        acc[p.tipo_usuario || 'sem_tipo'] = (acc[p.tipo_usuario || 'sem_tipo'] || 0) + 1;
-        return acc;
-      }, {})
-    });
+  // ✅ VERSÃO CORRIGIDA - Usando apenas a tabela profiles
+  const carregarDadosReais = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Carregando dados reais do dashboard...');
 
-    // Filtrar e processar alunos
-    const alunosRaw = allProfiles.filter(p => p.tipo_usuario === 'aluno');
-    const alunosProcessados = alunosRaw.map(aluno => ({
-      id: aluno.id,
-      nome: aluno.nome || aluno.full_name || aluno.email?.split('@')[0] || 'Sem nome',
-      email: aluno.email || 'Sem email',
-      instrumento: aluno.instrument || 'Não especificado',
-      nivel: aluno.user_level || 'beginner',
-      joined_at: aluno.joined_at,
-      last_active: aluno.last_active,
-      total_points: aluno.total_points || 0,
-      lessons_completed: aluno.lessons_completed || 0,
-      modules_completed: aluno.modules_completed || 0,
-      current_streak: aluno.current_streak || 0,
-      status: calcularStatus(aluno.last_active),
-      tipo: 'aluno'
-    }));
+      // Buscar todos os dados da tabela profiles (que já tem tudo organizado)
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('last_active', { ascending: false });
 
-    // Filtrar e processar professores
-    const professoresRaw = allProfiles.filter(p => p.tipo_usuario === 'professor');
-    const professoresProcessados = professoresRaw.map(prof => ({
-      id: prof.id,
-      nome: prof.nome || prof.full_name || prof.email?.split('@')[0] || 'Sem nome',
-      email: prof.email || 'Sem email',
-      instrumento: prof.instrument || 'Não especificado',
-      nivel: prof.user_level || 'advanced',
-      joined_at: prof.joined_at,
-      last_active: prof.last_active,
-      total_points: prof.total_points || 0,
-      status: calcularStatus(prof.last_active),
-      tipo: 'professor'
-    }));
+      if (profilesError) {
+        console.error('Erro ao buscar profiles:', profilesError);
+        throw new Error(`Erro ao carregar usuários: ${profilesError.message}`);
+      }
 
-    // Filtrar admins
-    const adminsRaw = allProfiles.filter(p => p.tipo_usuario === 'admin');
+      console.log('📊 Dados brutos recebidos:', {
+        total_profiles: allProfiles?.length || 0,
+        tipos: allProfiles?.reduce((acc, p) => {
+          acc[p.tipo_usuario || 'sem_tipo'] = (acc[p.tipo_usuario || 'sem_tipo'] || 0) + 1;
+          return acc;
+        }, {})
+      });
 
-    // Calcular estatísticas
-    const agora = new Date();
-    const ultimoMes = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const ultimaSemana = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
-    const alunosNovos = alunosProcessados.filter(a => 
-      a.joined_at && new Date(a.joined_at) >= ultimoMes
-    ).length;
-    
-    const alunosAtivos = alunosProcessados.filter(a => a.status === 'ativo').length;
-    const professoresAtivos = professoresProcessados.filter(p => p.status === 'ativo').length;
-    
-    // Distribuição por instrumentos
-    const instrumentos = {};
-    [...alunosProcessados, ...professoresProcessados].forEach(user => {
-      const inst = (user.instrumento || 'outros').toLowerCase().trim();
-      instrumentos[inst] = (instrumentos[inst] || 0) + 1;
-    });
-
-    // Distribuição por níveis (só alunos)
-    const niveis = {};
-    alunosProcessados.forEach(aluno => {
-      const nivel = aluno.nivel || 'beginner';
-      niveis[nivel] = (niveis[nivel] || 0) + 1;
-    });
-
-    // Atividade recente - todos os usuários
-    const atividadeRecente = allProfiles
-      .filter(u => u.last_active && u.tipo_usuario) // Só usuários com atividade e tipo
-      .sort((a, b) => new Date(b.last_active) - new Date(a.last_active))
-      .slice(0, 10)
-      .map(u => ({
-        nome: u.nome || u.full_name || u.email?.split('@')[0] || 'Usuário',
-        tipo: u.tipo_usuario,
-        last_active: u.last_active,
-        action: 'login'
+      // Filtrar e processar alunos
+      const alunosRaw = allProfiles.filter(p => p.tipo_usuario === 'aluno');
+      const alunosProcessados = alunosRaw.map(aluno => ({
+        id: aluno.id,
+        nome: aluno.nome || aluno.full_name || aluno.email?.split('@')[0] || 'Sem nome',
+        email: aluno.email || 'Sem email',
+        instrumento: aluno.instrument || 'Não especificado',
+        nivel: aluno.user_level || 'beginner',
+        joined_at: aluno.joined_at,
+        last_active: aluno.last_active,
+        total_points: aluno.total_points || 0,
+        lessons_completed: aluno.lessons_completed || 0,
+        modules_completed: aluno.modules_completed || 0,
+        current_streak: aluno.current_streak || 0,
+        status: calcularStatus(aluno.last_active),
+        tipo: 'aluno'
       }));
 
-    const estatisticas = {
-      total_alunos: alunosProcessados.length,
-      total_professores: professoresProcessados.length,
-      total_admins: adminsRaw.length,
-      alunos_novos: alunosNovos,
-      alunos_ativos: alunosAtivos,
-      professores_ativos: professoresAtivos,
-      total_usuarios: allProfiles.length,
-      instrumentos_populares: Object.entries(instrumentos)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5),
-      distribuicao_niveis: niveis,
-      taxa_atividade: Math.round((alunosAtivos / Math.max(alunosProcessados.length, 1)) * 100),
-      crescimento_mensal: alunosNovos,
-      // Novas métricas
-      pontos_total: alunosProcessados.reduce((sum, a) => sum + a.total_points, 0),
-      aulas_completadas: alunosProcessados.reduce((sum, a) => sum + a.lessons_completed, 0),
-      streak_medio: Math.round(
-        alunosProcessados.reduce((sum, a) => sum + a.current_streak, 0) / Math.max(alunosProcessados.length, 1)
-      )
-    };
+      // Filtrar e processar professores
+      const professoresRaw = allProfiles.filter(p => p.tipo_usuario === 'professor');
+      const professoresProcessados = professoresRaw.map(prof => ({
+        id: prof.id,
+        nome: prof.nome || prof.full_name || prof.email?.split('@')[0] || 'Sem nome',
+        email: prof.email || 'Sem email',
+        instrumento: prof.instrument || 'Não especificado',
+        nivel: prof.user_level || 'advanced',
+        joined_at: prof.joined_at,
+        last_active: prof.last_active,
+        total_points: prof.total_points || 0,
+        status: calcularStatus(prof.last_active),
+        tipo: 'professor'
+      }));
 
-    setDadosReais({
-      alunos: alunosProcessados,
-      professores: professoresProcessados,
-      admins: adminsRaw,
-      estatisticas,
-      atividade: atividadeRecente
-    });
+      // Filtrar admins
+      const adminsRaw = allProfiles.filter(p => p.tipo_usuario === 'admin');
 
-    console.log('✅ Dados processados com sucesso:', {
-      alunos: alunosProcessados.length,
-      professores: professoresProcessados.length,
-      admins: adminsRaw.length,
-      estatisticas: {
-        total: estatisticas.total_usuarios,
-        ativos: estatisticas.alunos_ativos + estatisticas.professores_ativos,
-        instrumentos: estatisticas.instrumentos_populares.length
-      }
-    });
+      // Calcular estatísticas
+      const agora = new Date();
+      const ultimoMes = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ultimaSemana = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      const alunosNovos = alunosProcessados.filter(a => 
+        a.joined_at && new Date(a.joined_at) >= ultimoMes
+      ).length;
+      
+      const alunosAtivos = alunosProcessados.filter(a => a.status === 'ativo').length;
+      const professoresAtivos = professoresProcessados.filter(p => p.status === 'ativo').length;
+      
+      // Distribuição por instrumentos
+      const instrumentos = {};
+      [...alunosProcessados, ...professoresProcessados].forEach(user => {
+        const inst = (user.instrumento || 'outros').toLowerCase().trim();
+        instrumentos[inst] = (instrumentos[inst] || 0) + 1;
+      });
 
-  } catch (err) {
-    console.error('❌ Erro ao carregar dados:', err);
-    setError('Erro ao carregar dados: ' + err.message);
-  } finally {
-    setLoading(false);
-  }
-}, []);
+      // Distribuição por níveis (só alunos)
+      const niveis = {};
+      alunosProcessados.forEach(aluno => {
+        const nivel = aluno.nivel || 'beginner';
+        niveis[nivel] = (niveis[nivel] || 0) + 1;
+      });
+
+      // Atividade recente - todos os usuários
+      const atividadeRecente = allProfiles
+        .filter(u => u.last_active && u.tipo_usuario) // Só usuários com atividade e tipo
+        .sort((a, b) => new Date(b.last_active) - new Date(a.last_active))
+        .slice(0, 10)
+        .map(u => ({
+          nome: u.nome || u.full_name || u.email?.split('@')[0] || 'Usuário',
+          tipo: u.tipo_usuario,
+          last_active: u.last_active,
+          action: 'login'
+        }));
+
+      const estatisticas = {
+        total_alunos: alunosProcessados.length,
+        total_professores: professoresProcessados.length,
+        total_admins: adminsRaw.length,
+        alunos_novos: alunosNovos,
+        alunos_ativos: alunosAtivos,
+        professores_ativos: professoresAtivos,
+        total_usuarios: allProfiles.length,
+        instrumentos_populares: Object.entries(instrumentos)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 5),
+        distribuicao_niveis: niveis,
+        taxa_atividade: Math.round((alunosAtivos / Math.max(alunosProcessados.length, 1)) * 100),
+        crescimento_mensal: alunosNovos,
+        // Novas métricas
+        pontos_total: alunosProcessados.reduce((sum, a) => sum + a.total_points, 0),
+        aulas_completadas: alunosProcessados.reduce((sum, a) => sum + a.lessons_completed, 0),
+        streak_medio: Math.round(
+          alunosProcessados.reduce((sum, a) => sum + a.current_streak, 0) / Math.max(alunosProcessados.length, 1)
+        )
+      };
+
+      setDadosReais({
+        alunos: alunosProcessados,
+        professores: professoresProcessados,
+        admins: adminsRaw,
+        estatisticas,
+        atividade: atividadeRecente
+      });
+
+      console.log('✅ Dados processados com sucesso:', {
+        alunos: alunosProcessados.length,
+        professores: professoresProcessados.length,
+        admins: adminsRaw.length,
+        estatisticas: {
+          total: estatisticas.total_usuarios,
+          ativos: estatisticas.alunos_ativos + estatisticas.professores_ativos,
+          instrumentos: estatisticas.instrumentos_populares.length
+        }
+      });
+
+    } catch (err) {
+      console.error('❌ Erro ao carregar dados:', err);
+      setError('Erro ao carregar dados: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const calcularStatus = (lastActive) => {
     if (!lastActive) return 'inativo';
@@ -312,55 +327,53 @@ const carregarDadosReais = useCallback(async () => {
     </div>
   );
 
-  // Encontre esta função no seu AdminDashboard.jsx e SUBSTITUA por esta versão:
-
-const MainNavigationGrid = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-    <ActionButton
-      title="Gestão de Alunos"
-      description={`${dadosReais.estatisticas.total_alunos} alunos`}
-      icon={GraduationCap}
-      color="border-2 border-green-200 bg-green-50 hover:bg-green-100"
-      onClick={() => navigate('/admin/alunos')}
-      featured={true}
-    />
-    <ActionButton
-      title="Gestão de Professores"
-      description={`${dadosReais.estatisticas.total_professores} professores`}
-      icon={UserCheck}
-      color="border-2 border-blue-200 bg-blue-50 hover:bg-blue-100"
-      onClick={() => navigate('/admin/professores')}
-      featured={true}
-    />
-    
-    {/* 🚀 NOVO: QR CODES */}
-    <ActionButton
-      title="QR Codes"
-      description="Sistema de presença"
-      icon={QrCode}
-      color="border-2 border-purple-200 bg-purple-50 hover:bg-purple-100"
-      onClick={() => navigate('/admin/qr-manager')}
-      featured={true}
-    />
-    
-    <ActionButton
-      title="Kanban de Aulas"
-      description="Gestão visual"
-      icon={LayoutGrid}
-      color="border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
-      onClick={() => navigate('/admin/kanban')}
-      featured={true}
-    />
-    <ActionButton
-      title="Instrumentos"
-      description="Sistema completo"
-      icon={Music}
-      color="border-2 border-orange-200 bg-orange-50 hover:bg-orange-100"
-      onClick={() => navigate('/admin/instruments')}
-      featured={true}
-    />
-  </div>
-);
+  const MainNavigationGrid = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <ActionButton
+        title="Gestão de Alunos"
+        description={`${dadosReais.estatisticas.total_alunos} alunos`}
+        icon={GraduationCap}
+        color="border-2 border-green-200 bg-green-50 hover:bg-green-100"
+        onClick={() => navigate('/admin/alunos')}
+        featured={true}
+      />
+      <ActionButton
+        title="Gestão de Professores"
+        description={`${dadosReais.estatisticas.total_professores} professores`}
+        icon={UserCheck}
+        color="border-2 border-blue-200 bg-blue-50 hover:bg-blue-100"
+        onClick={() => navigate('/admin/professores')}
+        featured={true}
+      />
+      
+      {/* 🚀 QR CODES */}
+      <ActionButton
+        title="QR Codes"
+        description="Sistema de presença"
+        icon={QrCode}
+        color="border-2 border-purple-200 bg-purple-50 hover:bg-purple-100"
+        onClick={() => navigate('/admin/qr-manager')}
+        featured={true}
+      />
+      
+      <ActionButton
+        title="Kanban de Aulas"
+        description="Gestão visual"
+        icon={LayoutGrid}
+        color="border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
+        onClick={() => navigate('/admin/kanban')}
+        featured={true}
+      />
+      <ActionButton
+        title="Instrumentos"
+        description="Sistema completo"
+        icon={Music}
+        color="border-2 border-orange-200 bg-orange-50 hover:bg-orange-100"
+        onClick={() => navigate('/admin/instruments')}
+        featured={true}
+      />
+    </div>
+  );
 
   const RecentActivityPanel = () => (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -457,12 +470,20 @@ const MainNavigationGrid = () => (
           <div className="text-6xl mb-4">🚫</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
           <p className="text-base text-gray-700 mb-6">{error}</p>
-          <button
-            onClick={() => window.history.back()}
-            className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
-          >
-            Voltar
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.history.back()}
+              className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors"
+            >
+              Fazer Logout
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -470,7 +491,7 @@ const MainNavigationGrid = () => (
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
-      {/* Header Administrativo Melhorado */}
+      {/* 🚀 Header Administrativo com LOGOUT */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -483,7 +504,9 @@ const MainNavigationGrid = () => (
                 Gestão completa da Nipo School - {dadosReais.estatisticas.total_usuarios} usuários
               </p>
               <div className="flex items-center gap-4 text-sm text-purple-200">
-                <span>👑 {userProfile?.full_name || 'Administrador'}</span>
+                <span>👑 {userProfile?.full_name || userProfile?.nome || 'Administrador'}</span>
+                <span>•</span>
+                <span>📧 {userProfile?.email}</span>
                 <span>•</span>
                 <span>📊 {dadosReais.estatisticas.alunos_ativos} ativos hoje</span>
                 <span>•</span>
@@ -509,6 +532,16 @@ const MainNavigationGrid = () => (
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Atualizar</span>
+              </button>
+
+              {/* 🚀 BOTÃO DE LOGOUT */}
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500/80 hover:bg-red-600 rounded-xl transition-colors flex items-center gap-2 border border-red-400"
+                title="Sair da conta de administrador"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>

@@ -336,7 +336,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // ========================================
   // OUTRAS FUNÇÕES
-  // ========================================
+  // ======================================== 
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -390,9 +390,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserProfile(updatedProfile);
       return updatedProfile;
     } catch (error) {
-      throw error;
+      throw error; 
     }
-  };
+  }; 
 
   // ========================================
   // RENDER

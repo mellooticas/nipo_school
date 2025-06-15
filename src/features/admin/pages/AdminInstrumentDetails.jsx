@@ -1015,5 +1015,5 @@ const AdminInstrumentDetails = () => {
     </>
   );
 };
-
+ 
 export default AdminInstrumentDetails;

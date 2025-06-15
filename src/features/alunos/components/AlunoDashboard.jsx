@@ -12,7 +12,8 @@ import {
   Award,
   Heart,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  Camera  // 🚀 ADICIONAR ESTA LINHA
 } from 'lucide-react';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useModules } from '../../modulos/hooks/useModules';
@@ -42,7 +43,7 @@ const AlunoDashboard = () => {
     try {
       const { data: votosData, error: votosError } = await supabase
         .from('view_placar_logos')
-        .select('*')
+        .select('*') 
         .order('votos', { ascending: false });
 
       if (votosError) throw votosError;
@@ -218,12 +219,31 @@ const AlunoDashboard = () => {
           </div>
         </div>
 
+        // Encontre a seção "Action Buttons Grid" no seu AlunoDashboard.jsx e SUBSTITUA por esta versão:
+
         {/* Action Buttons Grid - Específico para Alunos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           
+          {/* 🚀 NOVO: Scanner QR Code - PRIORIDADE MÁXIMA */}
+          <button 
+            onClick={() => navigate('/scanner')}
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border-2 border-red-200 hover:border-red-400 hover:-translate-y-1 bg-gradient-to-br from-red-50 to-pink-50"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 animate-pulse">
+              <Camera className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="font-bold text-red-800 mb-2 text-lg">📱 Registrar Presença</h3>
+            <p className="text-red-600 text-sm leading-relaxed font-medium">
+              Escaneie o QR Code da aula
+            </p>
+            <div className="mt-2 text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full inline-block">
+              ✨ Sistema Alpha School
+            </div>
+          </button>
+
           {/* Meu Instrumento */}
           <button 
-            onClick={() => navigate('/instrumentos')}
+            onClick={() => navigate('/alunos/meu-instrumento')}
             className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-center p-6 border border-blue-100 hover:border-blue-300 hover:-translate-y-1"
           >
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">

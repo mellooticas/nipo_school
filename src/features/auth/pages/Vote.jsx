@@ -12,7 +12,7 @@ import {
   LogOut, 
   User,
   SkipForward,
-  ChevronDown,
+  ChevronDown, 
   Settings
 } from 'lucide-react';
 import { useAuth } from '../../../shared/contexts/AuthContext';

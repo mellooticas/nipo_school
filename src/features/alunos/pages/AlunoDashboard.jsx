@@ -5,4 +5,4 @@ const AlunoDashboardPage = () => {
   return <AlunoDashboard />;
 };
 
-export default AlunoDashboardPage;
+export default AlunoDashboardPage;  
